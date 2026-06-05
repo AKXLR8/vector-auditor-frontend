@@ -13,7 +13,7 @@ export async function submitFeedback(fb: FeedbackRequest): Promise<void> {
 
 export async function* streamQuery(req: QueryRequest): AsyncGenerator<StreamEvent> {
   const token = localStorage.getItem("access_token");
-  const response = await fetch(`${getApiBaseUrl()}/api/query/stream`, {
+  const response = await fetch(`${getApiBaseUrl()}/query/stream`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

@@ -45,7 +45,7 @@ export default function DocumentViewer({ docId, citation, page: initialPage, onC
   const token = useMemo(() => localStorage.getItem("access_token") || "", []);
 
   const fileUrl = useMemo(() => ({
-    url: `${getApiBaseUrl()}/api/documents/${docId}/pdf`,
+    url: `${getApiBaseUrl()}/documents/${docId}/pdf`,
     withCredentials: false,
   }), [docId]);
 

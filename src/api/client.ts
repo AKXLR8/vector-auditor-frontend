@@ -2,7 +2,7 @@ import axios from "axios";
 import { getApiBaseUrl } from "./config";
 
 const client = axios.create({
-  baseURL: `${getApiBaseUrl()}/api`,
+  baseURL: getApiBaseUrl(),
   headers: { "Content-Type": "application/json" },
 });
 
@@ -54,7 +54,7 @@ client.interceptors.response.use(
     isRefreshing = true;
 
     try {
-      const { data } = await axios.get(`${getApiBaseUrl()}/api/auth/token/refresh`, {
+      const { data } = await axios.get(`${getApiBaseUrl()}/auth/token/refresh`, {
         headers: { Authorization: `Bearer ${localStorage.getItem("access_token")}` },
       });
       localStorage.setItem("access_token", data.access_token);
