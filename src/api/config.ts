@@ -1,3 +1,3 @@
 export function getApiBaseUrl(): string {
-  return (window as any).BACKEND_URL ?? "";
+  return import.meta.env.VITE_API_URL ?? "";
 }
