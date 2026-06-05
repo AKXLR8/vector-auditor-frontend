@@ -8,11 +8,15 @@ export default defineConfig({
     host: "127.0.0.1",
     port: 3001,
     proxy: {
-      "/api": {
-        target: "http://localhost:8000",
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, ""),
-      },
+      "/auth": { target: "http://localhost:8000", changeOrigin: true },
+      "/query": { target: "http://localhost:8000", changeOrigin: true },
+      "/documents": { target: "http://localhost:8000", changeOrigin: true },
+      "/uploads": { target: "http://localhost:8000", changeOrigin: true },
+      "/feedback": { target: "http://localhost:8000", changeOrigin: true },
+      "/sessions": { target: "http://localhost:8000", changeOrigin: true },
+      "/admin": { target: "http://localhost:8000", changeOrigin: true },
+      "/cache": { target: "http://localhost:8000", changeOrigin: true },
+      "/health": { target: "http://localhost:8000", changeOrigin: true },
     },
   },
 });
