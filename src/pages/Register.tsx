@@ -1,11 +1,13 @@
-import { useState, useEffect, useRef, type FormEvent, type ReactNode } from "react";
+import { useState, useEffect, useRef, useMemo, type FormEvent, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
 import { useAuth } from "../context/AuthContext";
 import { fetchOAuthConfig } from "../api/auth";
+import { errorMessage } from "../lib/errors";
+import { classifyError } from "../lib/errors";
 import {
-  Eye, EyeSlash, GithubLogo,
+  Eye, EyeSlash, GithubLogo, Warning, CheckCircle,
 } from "@phosphor-icons/react";
 
 function StepItem({ number, text, active }: { number: string; text: string; active?: boolean }) {
@@ -97,7 +99,7 @@ export default function Register() {
     if (!oAuthConfig?.github_client_id) return;
     const state = crypto.randomUUID();
     localStorage.setItem("oauth_state", state);
-    const redirectUri = `${window.location.origin}/auth/callback`;
+    const redirectUri = `${window.location.origin}/oauth/callback`;
     const width = 600, height = 700;
     const left = window.screenX + (window.innerWidth - width) / 2;
     const top = window.screenY + (window.innerHeight - height) / 2;
@@ -110,24 +112,32 @@ export default function Register() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (loading) return;
     setError("");
+    if (!email.trim()) { setError("Email is required"); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { setError("Please enter a valid email"); return; }
     if (password.length < 8) { setError("Password must be at least 8 characters"); return; }
     setLoading(true);
     try {
-      await register(email, password);
+      await register(email.trim(), password, firstName.trim(), lastName.trim());
       toast.success("Account created! Please sign in.");
       navigate("/login");
     } catch (err: any) {
-      const detail = err.response?.data?.detail;
-      if (Array.isArray(detail)) {
-        setError(detail.map((d: any) => d.msg).filter(Boolean).join(", "));
-      } else {
-        setError(detail || "Registration failed");
-      }
+      setError(errorMessage(err, "Registration failed"));
     } finally {
       setLoading(false);
     }
   };
+
+  const passwordStrength = useMemo(() => {
+    let score = 0;
+    if (password.length >= 8) score++;
+    if (password.length >= 12) score++;
+    if (/[A-Z]/.test(password) && /[a-z]/.test(password)) score++;
+    if (/\d/.test(password)) score++;
+    if (/[^A-Za-z0-9]/.test(password)) score++;
+    return Math.min(score, 4);
+  }, [password]);
 
   return (
     <main className="flex min-h-screen w-full bg-[#000000] selection:bg-brand/30 p-2 transition-all duration-500 lg:h-screen lg:overflow-hidden lg:p-4">
@@ -217,7 +227,27 @@ export default function Register() {
                 {showPassword ? <EyeSlash size={18} /> : <Eye size={18} />}
               </button>
             </InputGroup>
-            <p className="text-xs text-white/20 -mt-3">Requires at least 8 symbols.</p>
+            <div className="-mt-2 space-y-1.5">
+              <div className="flex items-center gap-1.5">
+                {[0, 1, 2, 3].map((i) => (
+                  <div
+                    key={i}
+                    className={`h-1 flex-1 rounded-full transition-colors ${
+                      password && i < passwordStrength
+                        ? passwordStrength <= 1
+                          ? "bg-red-500"
+                          : passwordStrength <= 2
+                          ? "bg-amber-500"
+                          : "bg-emerald-500"
+                        : "bg-white/[0.06]"
+                    }`}
+                  />
+                ))}
+              </div>
+              <p className="text-[10px] text-white/30">
+                {passwordStrength <= 1 ? "Weak" : passwordStrength === 2 ? "Fair" : passwordStrength === 3 ? "Good" : passwordStrength === 4 ? "Strong" : "8+ characters recommended"}
+              </p>
+            </div>
 
             <button
               type="submit"

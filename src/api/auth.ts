@@ -1,8 +1,16 @@
 import client from "./client";
 import type { User } from "../types";
 
-export async function register(email: string, password: string): Promise<User> {
-  const { data } = await client.post("/auth/register", { email, password });
+export async function register(
+  email: string,
+  password: string,
+  firstName?: string,
+  lastName?: string
+): Promise<User> {
+  const payload: Record<string, string> = { email, password };
+  if (firstName?.trim()) payload.first_name = firstName.trim();
+  if (lastName?.trim()) payload.last_name = lastName.trim();
+  const { data } = await client.post("/auth/register", payload);
   return data;
 }
 

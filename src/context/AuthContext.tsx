@@ -1,14 +1,14 @@
 import { createContext, useContext, useState, useEffect, useRef, type ReactNode } from "react";
 import type { User } from "../types";
 import * as authApi from "../api/auth";
-import client from "../api/client";
+import client, { TOKEN_KEY, USER_KEY } from "../api/client";
 
 interface AuthContextValue {
   user: User | null;
   token: string | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string) => Promise<void>;
+  register: (email: string, password: string, firstName?: string, lastName?: string) => Promise<void>;
   logout: () => Promise<void>;
   oauthLogin: (provider: "github", credential: string) => Promise<void>;
   isAuthenticated: boolean;
@@ -28,9 +28,10 @@ function parseToken(token: string): { sub: string; roles: string[]; exp: number;
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(localStorage.getItem("access_token"));
+  const [token, setToken] = useState<string | null>(localStorage.getItem(TOKEN_KEY));
   const [loading, setLoading] = useState(true);
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const expiryWarningShown = useRef(false);
 
   const REFRESH_THRESHOLD_SEC = 86400; // 1 day — must match backend REFRESH_THRESHOLD_MINUTES
 
@@ -40,13 +41,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const now = Math.floor(Date.now() / 1000);
     const remaining = exp - now;
 
-    if (remaining <= 0) return; // already expired
+    if (remaining <= 0) return;
+
+    const EXPIRY_WARN_SEC = 300;
+    if (remaining <= EXPIRY_WARN_SEC && remaining > REFRESH_THRESHOLD_SEC) {
+      window.setTimeout(() => {
+        window.dispatchEvent(new CustomEvent("va:trigger-expiry-warning"));
+      }, (remaining - REFRESH_THRESHOLD_SEC) * 1000);
+    }
 
     if (remaining <= REFRESH_THRESHOLD_SEC) {
-      // Token is within the eligible refresh window — refresh now
       refreshTimer.current = setTimeout(doRefresh, 0);
     } else {
-      // Token has plenty of life — schedule refresh when it enters the window
       const msUntilWindow = (remaining - REFRESH_THRESHOLD_SEC) * 1000;
       refreshTimer.current = setTimeout(doRefresh, msUntilWindow);
     }
@@ -55,12 +61,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const doRefresh = async () => {
     try {
       const { data } = await client.get("/auth/token/refresh");
-      localStorage.setItem("access_token", data.access_token);
+      localStorage.setItem(TOKEN_KEY, data.access_token);
       setToken(data.access_token);
+      expiryWarningShown.current = false;
     } catch {
       // refresh failed — tokens will expire naturally, interceptor handles 401s
     }
   };
+
+  const showExpiryWarning = () => {
+    if (expiryWarningShown.current) return;
+    expiryWarningShown.current = true;
+    window.dispatchEvent(new CustomEvent("va:session-expiring"));
+  };
+
+  useEffect(() => {
+    const onWarning = () => showExpiryWarning();
+    window.addEventListener("va:trigger-expiry-warning", onWarning);
+    return () => window.removeEventListener("va:trigger-expiry-warning", onWarning);
+  }, []);
 
   useEffect(() => {
     if (token) {
@@ -84,8 +103,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [token]);
 
   const setTokenAndSchedule = (newToken: string) => {
-    localStorage.setItem("access_token", newToken);
+    localStorage.setItem(TOKEN_KEY, newToken);
     setToken(newToken);
+    expiryWarningShown.current = false;
   };
 
   const login = async (email: string, password: string) => {
@@ -93,8 +113,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setTokenAndSchedule(res.access_token);
   };
 
-  const register = async (email: string, password: string) => {
-    await authApi.register(email, password);
+  const register = async (email: string, password: string, firstName?: string, lastName?: string) => {
+    await authApi.register(email, password, firstName, lastName);
   };
 
   const oauthLogin = async (provider: "github", credential: string) => {
@@ -108,8 +128,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {
       // ignore
     }
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("user");
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
     setToken(null);
     setUser(null);
     if (refreshTimer.current) clearTimeout(refreshTimer.current);

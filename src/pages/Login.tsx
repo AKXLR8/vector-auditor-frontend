@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef, type FormEvent } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Link, useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
+import toast from "react-hot-toast";
 import { useAuth } from "../context/AuthContext";
 import { fetchOAuthConfig } from "../api/auth";
-import { Eye, EyeSlash, GithubLogo } from "@phosphor-icons/react";
+import { errorMessage } from "../lib/errors";
+import { Eye, EyeSlash, GithubLogo, WarningCircle, Shield } from "@phosphor-icons/react";
 
 function StepItem({ number, text, active }: { number: string; text: string; active?: boolean }) {
   return (
@@ -54,11 +56,18 @@ export default function Login() {
   const { isAuthenticated, login, oauthLogin } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const from = (location.state as any)?.from?.pathname || "/chat";
+  const wasExpired = searchParams.get("expired") === "1";
 
   useEffect(() => {
     if (isAuthenticated) navigate(from, { replace: true });
   }, [isAuthenticated, navigate, from]);
+
+  useEffect(() => {
+    if (wasExpired) toast("Your session expired. Please sign in again.", { icon: "🔒", duration: 4000 });
+  }, [wasExpired]);
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -79,8 +88,7 @@ export default function Login() {
       if (provider === "github" && code) {
         setOauthLoading(true);
         oauthLogin("github", code).then(() => navigate(from, { replace: true })).catch((err: any) => {
-          const detail = err.response?.data?.detail;
-          setError(Array.isArray(detail) ? detail.map((d: any) => d.msg).filter(Boolean).join(", ") : detail || "GitHub login failed");
+          setError(errorMessage(err, "GitHub login failed"));
         }).finally(() => setOauthLoading(false));
       }
     };
@@ -88,38 +96,41 @@ export default function Login() {
     return () => {
       if (oauthListener.current) window.removeEventListener("message", oauthListener.current);
     };
-  }, [oauthLogin, navigate]);
+  }, [oauthLogin, navigate, from]);
 
   const handleGithubLogoLogin = () => {
     if (!oAuthConfig?.github_client_id) return;
     const state = crypto.randomUUID();
     localStorage.setItem("oauth_state", state);
-    const redirectUri = `${window.location.origin}/auth/callback`;
+    const redirectUri = `${window.location.origin}/oauth/callback`;
     const width = 600;
     const height = 700;
     const left = window.screenX + (window.innerWidth - width) / 2;
     const top = window.screenY + (window.innerHeight - height) / 2;
-    window.open(
+    const popup = window.open(
       `https://github.com/login/oauth/authorize?client_id=${oAuthConfig.github_client_id}&redirect_uri=${redirectUri}&scope=user:email&state=${state}`,
       "github-oauth",
       `width=${width},height=${height},left=${left},top=${top}`
     );
+    if (!popup) {
+      setError("Popup was blocked. Please allow popups for this site.");
+    }
   };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (loading) return;
+    if (!email.trim() || !password) {
+      setError("Email and password are required");
+      return;
+    }
     setError("");
     setLoading(true);
     try {
-      await login(email, password);
+      await login(email.trim(), password);
       navigate(from, { replace: true });
     } catch (err: any) {
-      const detail = err.response?.data?.detail;
-      if (Array.isArray(detail)) {
-        setError(detail.map((d: any) => d.msg).filter(Boolean).join(", "));
-      } else {
-        setError(detail || "Login failed");
-      }
+      setError(errorMessage(err, "Login failed"));
     } finally {
       setLoading(false);
     }
@@ -171,6 +182,20 @@ export default function Login() {
             <h2 className="text-3xl font-medium tracking-tight">Sign In</h2>
             <p className="text-white/40 text-sm">Enter your credentials to access your dashboard.</p>
           </div>
+
+          {wasExpired && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex items-start gap-2.5 px-3 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-200"
+            >
+              <Shield size={16} weight="duotone" className="shrink-0 mt-0.5" />
+              <div className="text-xs leading-relaxed">
+                <p className="font-medium">You were signed out</p>
+                <p className="text-amber-200/70">For your security, sessions expire after a period of inactivity. Sign in again to continue.</p>
+              </div>
+            </motion.div>
+          )}
 
           <div className="grid grid-cols-1 gap-4">
             <button

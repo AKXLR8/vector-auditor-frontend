@@ -2,7 +2,7 @@ import client from "./client";
 import type { Document } from "../types";
 
 export async function listDocuments(): Promise<Document[]> {
-  const { data } = await client.get("/documents");
+  const { data } = await client.get("/documents", { params: { _t: Date.now() } });
   return (data.documents || []).map((d: any) => ({
     ...d,
     document_id: d.id ?? d.document_id,

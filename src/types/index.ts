@@ -7,10 +7,14 @@ export interface User {
   created_at: string;
 }
 
+export type QueryMode = "white_box" | "black_box";
+
 export interface QueryRequest {
   question: string;
   document_ids?: string[];
   conversation_history?: { role: "user" | "assistant"; content: string }[];
+  mode?: QueryMode;
+  max_citations?: number;
 }
 
 export interface Citation {
@@ -29,6 +33,7 @@ export interface QueryResponse {
   query_id: string;
   timestamp: string;
   verification?: string | null;
+  mode?: QueryMode;
 }
 
 export interface Document {
@@ -68,6 +73,7 @@ export interface Message {
   feedback?: boolean | null;
   timestamp: string;
   verification?: string | null;
+  mode?: QueryMode;
 }
 
 export interface UploadProgress {
@@ -125,4 +131,20 @@ export interface StreamEvent {
   content?: string;
   query_id?: string;
   tokens_used?: number;
+  mode?: QueryMode;
+}
+
+export type AnalysisConfidence = "high" | "moderate" | "low";
+
+export interface DocumentAnalysis {
+  summary: string;
+  key_findings: string[];
+  methodology: string;
+  research_gaps: string[];
+  contradictions: string[];
+  open_questions: string[];
+  limitations: string;
+  confidence: AnalysisConfidence;
+  citations: Citation[];
+  documents_analyzed: string[];
 }

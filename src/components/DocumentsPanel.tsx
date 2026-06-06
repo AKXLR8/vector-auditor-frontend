@@ -6,6 +6,8 @@ import {
   CaretDown, CaretRight, Upload, CheckCircle,
 } from "@phosphor-icons/react";
 import type { Document, DocGroup } from "../types";
+import { deleteDocument } from "../api/documents";
+import { errorMessage } from "../lib/errors";
 
 interface Props {
   docs: Document[];
@@ -14,7 +16,7 @@ interface Props {
   onDocsDeleted: (ids: string[]) => void;
   onClose: () => void;
   onUpload: (files: FileList | null) => void;
-  onRefresh: () => void;
+  onRefresh: () => Promise<void> | void;
   uploadProgress: Record<string, { stage: string; progress: number; error?: string }>;
   uploading: boolean;
 }
@@ -27,7 +29,38 @@ const STAGE_LABELS: Record<string, string> = {
   saving: "Saving metadata",
   completed: "Completed",
   failed: "Failed",
+  duplicate: "Already in library",
+  skipped: "Skipped",
+  stuck: "Taking longer than expected",
 };
+
+type DocStatusKey = "ready" | "processing" | "failed" | "unknown";
+function docStatusKey(doc: { status?: string | null }): DocStatusKey {
+  const s = (doc.status || "").toLowerCase();
+  if (s === "success" || s === "ready" || s === "completed" || s === "indexed") return "ready";
+  if (s === "processing" || s === "queued" || s === "parsing" || s === "indexing" || s === "uploading") return "processing";
+  if (s === "failed" || s === "error") return "failed";
+  return "unknown";
+}
+
+const DOC_STATUS_PILL: Record<DocStatusKey, { label: string; cls: string }> = {
+  ready: { label: "Ready", cls: "bg-green-500/15 text-green-400" },
+  processing: { label: "Processing", cls: "bg-blue-500/15 text-blue-400" },
+  failed: { label: "Failed", cls: "bg-red-500/15 text-red-400" },
+  unknown: { label: "Pending", cls: "bg-white/5 text-[#9DAFAC]" },
+};
+
+function docDisplayName(doc: { filename?: string | null; document_id?: string; id?: string }): string {
+  const f = (doc.filename || "").trim();
+  if (f) return f;
+  const id = (doc.document_id ?? doc.id ?? "?").toString();
+  return `Untitled (${id.slice(0, 8)})`;
+}
+
+function docExt(filename: string): string {
+  const i = filename.lastIndexOf(".");
+  return i >= 0 && i < filename.length - 1 ? filename.slice(i + 1).toLowerCase() : "";
+}
 
 export default function DocumentsPanel({ docs, groups, onGroupsChange, onDocsDeleted, onClose, onUpload, onRefresh, uploadProgress, uploading }: Props) {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
@@ -102,22 +135,24 @@ export default function DocumentsPanel({ docs, groups, onGroupsChange, onDocsDel
 
   const deleteSelectedDocs = async () => {
     setDeleting(true);
-    const { deleteDocument } = await import("../api/documents");
     const ids = Array.from(selectedDocs);
-    try {
-      for (const id of ids) {
-        await deleteDocument(id);
-      }
-      setSelectedDocs(new Set());
-      // Remove deleted docs from all groups
-      onGroupsChange(groups.map((g) => ({ ...g, documentIds: g.documentIds.filter((d) => !ids.includes(d)) })));
-      // Optimistically remove from parent state
-      onDocsDeleted(ids);
-      onRefresh();
-    } catch (err: any) {
-      const msg = err?.response?.data?.detail || "Delete failed";
-      onRefresh();
-      toast.error(msg);
+    const results = await Promise.allSettled(ids.map((id) => deleteDocument(id)));
+    const succeeded = ids.filter((_, i) => results[i].status === "fulfilled");
+    const notFound = ids.filter((_, i) => results[i].status === "rejected" && (results[i] as PromiseRejectedResult).reason?.response?.status === 404);
+    const realFailures = results.filter((r) => r.status === "rejected" && (r as PromiseRejectedResult).reason?.response?.status !== 404);
+    setSelectedDocs(new Set());
+    onGroupsChange(groups.map((g) => ({ ...g, documentIds: g.documentIds.filter((d) => !succeeded.includes(d) && !notFound.includes(d)) })));
+    onDocsDeleted([...succeeded, ...notFound]);
+    await onRefresh();
+    if (succeeded.length > 0) {
+      toast.success(`${succeeded.length} document${succeeded.length > 1 ? "s" : ""} deleted`);
+    }
+    if (notFound.length > 0 && succeeded.length === 0) {
+      toast("Already removed", { icon: "🗑️", duration: 2000 });
+    }
+    if (realFailures.length > 0) {
+      const reason = (realFailures[0] as PromiseRejectedResult).reason;
+      toast.error(errorMessage(reason, "Some deletes failed"));
     }
     setDeleting(false);
     setConfirmDeleteDocs(false);
@@ -280,19 +315,20 @@ export default function DocumentsPanel({ docs, groups, onGroupsChange, onDocsDel
                         )}
                         {groupDocs.map((doc) => {
                           const did = doc.document_id ?? doc.id;
-                          const ext = doc.filename.split(".").pop()?.toLowerCase() || "";
+                          const name = docDisplayName(doc);
+                          const ext = docExt(name);
+                          const statusKey = docStatusKey(doc);
+                          const pill = DOC_STATUS_PILL[statusKey];
                           return (
                             <div key={did}
                               className="flex items-center gap-2 px-2.5 py-2 rounded-lg bg-[#0D1C1A]/50 hover:bg-[#0D1C1A] transition-colors group/doc"
                             >
                               <FileText size={13} className="text-[#00E6CF] shrink-0" />
                               <div className="flex-1 min-w-0">
-                                <p className="text-xs text-white truncate">{doc.filename}</p>
-                                <p className="text-[10px] text-[#9DAFAC]">{ext.toUpperCase()} &middot; {new Date(doc.created_at).toLocaleDateString()}</p>
+                                <p className="text-xs text-white truncate" title={name}>{name}</p>
+                                <p className="text-[10px] text-[#9DAFAC]">{ext ? ext.toUpperCase() : "FILE"} &middot; {new Date(doc.created_at).toLocaleDateString()}</p>
                               </div>
-                              <span className={`text-[10px] px-1.5 py-0.5 rounded shrink-0 ${
-                                doc.status === "success" ? "bg-green-500/15 text-green-400" : "bg-yellow-500/15 text-yellow-400"
-                              }`}>{doc.status}</span>
+                              <span className={`text-[10px] px-1.5 py-0.5 rounded shrink-0 ${pill.cls}`}>{pill.label}</span>
                               <button onClick={() => removeDocFromGroup(group.id, did)}
                                 className="w-5 h-5 rounded hover:bg-red-500/10 flex items-center justify-center text-[#9DAFAC] hover:text-red-400 opacity-0 group-hover/doc:opacity-100 transition-all"
                                 title="Remove from group">
@@ -342,12 +378,17 @@ export default function DocumentsPanel({ docs, groups, onGroupsChange, onDocsDel
           )}
           {docs.map((doc) => {
             const did = doc.document_id ?? doc.id;
+            const name = docDisplayName(doc);
+            const ext = docExt(name);
+            const statusKey = docStatusKey(doc);
+            const pill = DOC_STATUS_PILL[statusKey];
             const isSelected = selectedDocs.has(did);
             const inGroup = groups.some((g) => g.documentIds.includes(did));
             return (
               <div key={did}
                 draggable
                 onDragStart={(e) => handleDragStart(e, did)}
+                title={name}
                 className={`group flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm transition-colors cursor-pointer
                   ${isSelected ? "bg-[#00E6CF]/5" : "hover:bg-[#0A1514]"}`}
                 onClick={() => toggleDocSelect(did)}
@@ -361,14 +402,13 @@ export default function DocumentsPanel({ docs, groups, onGroupsChange, onDocsDel
                   )}
                 </div>
                 <FileText size={14} className={`shrink-0 ${isSelected ? "text-[#00E6CF]" : inGroup ? "text-[#9DAFAC]" : "text-[#9DAFAC]/60"}`} />
-                <span className={`flex-1 min-w-0 truncate text-xs ${isSelected ? "text-white" : "text-[#9DAFAC]"}`}>{doc.filename}</span>
-                {doc.status === "success" && (
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-500/15 text-green-400 shrink-0">
-                    {doc.filename.split(".").pop()?.toLowerCase()}
+                <span className={`flex-1 min-w-0 truncate text-xs ${isSelected ? "text-white" : "text-[#9DAFAC]"}`}>{name}</span>
+                {statusKey === "processing" ? (
+                  <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse shrink-0" />
+                ) : (
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded shrink-0 ${pill.cls}`}>
+                    {ext ? `${ext} · ${pill.label}` : pill.label}
                   </span>
-                )}
-                {doc.status === "processing" && (
-                  <span className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse shrink-0" />
                 )}
               </div>
             );
