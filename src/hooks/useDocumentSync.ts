@@ -38,7 +38,7 @@ function isEmptyDiff(d: DocDiff): boolean {
 
 export function useDocumentSync({
   enabled = true,
-  intervalMs = 10_000,
+  intervalMs = 30_000,
   onDocs,
   onDiff,
   onError,

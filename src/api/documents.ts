@@ -3,7 +3,8 @@ import type { Document } from "../types";
 
 export async function listDocuments(): Promise<Document[]> {
   const { data } = await client.get("/documents", { params: { _t: Date.now() } });
-  return (data.documents || []).map((d: any) => ({
+  const docs: any[] = Array.isArray(data) ? data : data?.documents ?? [];
+  return docs.map((d: any) => ({
     ...d,
     document_id: d.id ?? d.document_id,
   }));
