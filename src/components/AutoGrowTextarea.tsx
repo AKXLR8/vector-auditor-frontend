@@ -56,12 +56,16 @@ export function AutoGrowTextarea({
 
   return (
     <div
-      className={`liquid-glass-input flex flex-col gap-1.5 px-3 py-2 transition-[colors] duration-300 group ${
+      className={`flex flex-col gap-1.5 px-2.5 sm:px-3 py-2 rounded-2xl sm:rounded-[24px] transition-[colors] duration-300 group ${
         disabled ? "opacity-60 cursor-not-allowed" : ""
       }`}
+      style={{
+        background: "rgba(8, 10, 14, 0.6)",
+        border: "1px solid rgba(255,255,255,0.06)",
+      }}
     >
-      <div className="flex items-end gap-2">
-        {leftSlot && <div className="shrink-0 pb-1">{leftSlot}</div>}
+      <div className="flex items-end gap-1.5 sm:gap-2">
+        {leftSlot && <div className="shrink-0 pb-0.5">{leftSlot}</div>}
         <textarea
           ref={ref}
           value={value}
@@ -70,7 +74,7 @@ export function AutoGrowTextarea({
           onKeyDown={onKeyDown}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          className="flex-1 min-w-0 bg-transparent border-none outline-none text-[15px] sm:text-[14px] py-1.5 px-1 text-white placeholder:text-white/35 resize-none leading-[22px] max-h-[180px] disabled:cursor-not-allowed transition-colors"
+          className="flex-1 min-w-0 bg-transparent border-none outline-none text-[16px] sm:text-[14px] py-1.5 px-0.5 sm:px-1 text-white placeholder:text-white/30 resize-none leading-[22px] max-h-[180px] disabled:cursor-not-allowed transition-colors"
           style={{ height: "auto" }}
         />
         {rightSlot && <div className="shrink-0 pb-0.5">{rightSlot}</div>}
@@ -79,10 +83,9 @@ export function AutoGrowTextarea({
             <motion.button
               type="button"
               onClick={onStop}
-              whileHover={{ scale: 1.06 }}
-              whileTap={{ scale: 0.92 }}
+              whileTap={{ scale: 0.9 }}
               aria-label="Stop generation"
-              className="w-10 h-10 sm:w-9 sm:h-9 rounded-full bg-white text-black flex items-center justify-center hover:bg-white/90 active:shadow-inner transition-[colors] shadow-[0_4px_14px_rgba(255,255,255,0.2)]"
+              className="w-9 h-9 sm:w-9 sm:h-9 rounded-full bg-white text-black flex items-center justify-center active:shadow-inner transition-[colors] shadow-[0_4px_14px_rgba(255,255,255,0.2)]"
             >
               <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor">
                 <rect x="0" y="0" width="10" height="10" rx="1.5" />
@@ -93,10 +96,9 @@ export function AutoGrowTextarea({
               type="button"
               onClick={onSubmit}
               disabled={!canSubmit}
-              whileHover={canSubmit ? { scale: 1.06 } : {}}
-              whileTap={canSubmit ? { scale: 0.92 } : {}}
+              whileTap={canSubmit ? { scale: 0.9 } : {}}
               aria-label="Send message"
-              className="w-10 h-10 sm:w-9 sm:h-9 rounded-full bg-gradient-to-br from-[#60A5FA] via-[#3B82F6] to-[#1E3A5F] text-white flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed transition-[colors,box-shadow] shadow-[0_4px_14px_rgba(59,130,246,0.35)] hover:shadow-[0_6px_20px_rgba(59,130,246,0.5)] active:shadow-inner"
+              className="w-9 h-9 sm:w-9 sm:h-9 rounded-full bg-gradient-to-br from-[#60A5FA] via-[#3B82F6] to-[#1E3A5F] text-white flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed transition-[colors,box-shadow] shadow-[0_4px_14px_rgba(59,130,246,0.35)] active:shadow-inner"
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M5 12h14M12 5l7 7-7 7" />
@@ -106,7 +108,7 @@ export function AutoGrowTextarea({
         </div>
       </div>
       {footerSlot && (
-        <div className="relative flex items-center justify-between gap-2 pt-2 -mx-1 px-1">
+        <div className="relative flex items-center justify-between gap-2 pt-1.5 -mx-0.5 sm:-mx-1 px-0.5 sm:px-1">
           <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/[0.09] to-transparent pointer-events-none" />
           {footerSlot}
         </div>

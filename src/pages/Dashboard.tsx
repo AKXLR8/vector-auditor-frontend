@@ -1283,7 +1283,7 @@ export default function Dashboard() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 bg-black/60 z-30 md:hidden"
+            className="fixed inset-0 bg-black/70 z-30 md:hidden"
             onClick={() => setSidebarOpen(false)}
           />
         )}
@@ -1293,12 +1293,21 @@ export default function Dashboard() {
       <motion.aside
         animate={{ x: sidebarOpen ? 0 : -300 }}
         transition={{ type: "spring", damping: 28, stiffness: 260 }}
-        className="fixed top-0 md:top-3 bottom-0 md:bottom-3 left-0 md:left-3 z-30 w-[85vw] md:w-[300px] flex flex-col overflow-hidden liquid-glass-sidebar will-change-[transform] safe-area-top safe-area-bottom"
+        className="fixed top-0 md:top-3 bottom-0 md:bottom-3 left-0 md:left-3 z-30 w-screen md:w-[300px] flex flex-col overflow-hidden liquid-glass-sidebar will-change-[transform] safe-area-top safe-area-bottom"
       >
-        {/* Logo */}
-        <div className="flex items-center gap-2 px-4 pt-4 pb-1 shrink-0">
-          <img src="/logo.png" alt="Logo" className="w-9 h-9 object-contain" />
+        {/* Logo + mobile close */}
+        <div className="flex items-center gap-2 px-4 pt-5 md:pt-4 pb-1 shrink-0">
+          <img src="/logo.png" alt="Logo" className="w-10 h-10 object-contain" />
           <span className="text-sm font-semibold tracking-tight text-white/80">Vector Auditor</span>
+          <div className="flex-1" />
+          <button
+            type="button"
+            onClick={() => setSidebarOpen(false)}
+            aria-label="Close sidebar"
+            className="md:hidden w-10 h-10 rounded-xl flex items-center justify-center text-white/40 hover:text-white hover:bg-white/[0.06] transition-colors"
+          >
+            <X size={18} />
+          </button>
         </div>
 
         {/* Search + command palette trigger */}
@@ -1590,27 +1599,14 @@ export default function Dashboard() {
         {showVideoBg && (
           <HeroVideo />
         )}
-        {/* Futuristic background layers */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
+        {/* Futuristic background layers (hidden on mobile for performance) */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none hidden md:block" aria-hidden="true">
           <div className="absolute -top-40 -right-40 w-[800px] h-[800px] rounded-full bg-[#3B82F6] opacity-[0.04]"
                style={{ filter: "blur(120px)" }} />
           <div className="absolute -bottom-40 -left-40 w-[700px] h-[700px] rounded-full bg-[#1E3A5F] opacity-[0.1]"
                style={{ filter: "blur(140px)" }} />
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[600px] rounded-full bg-[#3B82F6] opacity-[0.03]"
                style={{ filter: "blur(180px)" }} />
-          {/* Animated glow blob */}
-          <motion.div
-            animate={{ x: [0, 30, -20, 0], y: [0, -20, 30, 0] }}
-            transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute top-1/3 right-1/4 w-[400px] h-[400px] rounded-full bg-[#3B82F6]/[0.03]"
-            style={{ filter: "blur(80px)" }}
-          />
-          <motion.div
-            animate={{ x: [0, -25, 20, 0], y: [0, 30, -15, 0] }}
-            transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute bottom-1/3 left-1/4 w-[350px] h-[350px] rounded-full bg-[#1E3A5F]/[0.08]"
-            style={{ filter: "blur(100px)" }}
-          />
         </div>
 
         <input ref={fileInput} type="file" multiple accept=".pdf,.md,.txt,.docx" className="hidden" onChange={(e) => handleUpload(e.target.files)} />
@@ -1633,8 +1629,8 @@ export default function Dashboard() {
                 {hasRealMessages ? (
                   /* ── Chat messages view ── */
                   <>
-                    <div ref={chatContainerRef} className="flex-1 overflow-y-auto px-3 md:px-4 py-4 md:py-6 relative will-change-[scroll-position] [overscroll-behavior:contain]">
-                      <div className="max-w-3xl mx-auto space-y-4">
+                    <div ref={chatContainerRef} className="flex-1 overflow-y-auto px-2 md:px-4 py-2 md:py-6 relative will-change-[scroll-position] [overscroll-behavior:contain]">
+                      <div className="max-w-3xl mx-auto flex flex-col gap-2.5 md:gap-4">
                         <AnimatePresence initial={false}>
                           {messages.map((msg, idx) => (
                             <motion.div
@@ -1651,7 +1647,7 @@ export default function Dashboard() {
                               }`}>
                                 {msg.role === "assistant" ? <Robot size={14} /> : <User size={14} />}
                               </div>
-                              <div className={`flex-1 min-w-0 max-w-[85%] md:max-w-[85%] ${msg.role === "user" ? "text-right" : ""}`}>
+                              <div className={`flex-1 min-w-0 max-w-[88%] md:max-w-[85%] ${msg.role === "user" ? "text-right" : ""}`}>
                                 {msg.role === "user" ? (
                                   <div className={`group relative inline-block px-3.5 md:px-4 py-2.5 md:py-3 text-sm leading-relaxed text-left rounded-[20px] ${
                                     editingMessageId === msg.id
@@ -1698,7 +1694,7 @@ export default function Dashboard() {
                                     )}
                                   </div>
                                 ) : (
-                                  <div className="bg-white/[0.03] border border-white/[0.06] rounded-[20px] p-3.5 md:p-5 group/msg relative">
+                                  <div className="bg-white/[0.03] border border-white/[0.06] rounded-[20px] p-3 md:p-5 group/msg relative">
                                     <div className="text-sm leading-relaxed citation-area" data-msg-id={msg.id}>
                                       {msg.content ? (
                                         <DiffusingMarkdown content={msg.content} streaming={loading && msg.role === "assistant" && idx === messages.length - 1} />
@@ -1792,15 +1788,15 @@ export default function Dashboard() {
                   </>
                 ) : (
                   /* ── Copilot-style Hero View ── */
-                    <div className="flex-1 flex flex-col items-center justify-center overflow-y-auto px-4 py-6 md:py-8">
-                    <div className="flex-1 flex flex-col items-center justify-center max-w-2xl w-full">
+                    <div className="flex-1 flex flex-col items-center justify-center overflow-y-auto px-5 py-10 md:py-8">
+                    <div className="flex flex-col items-center justify-center max-w-2xl w-full mt-[-5vh] md:mt-0">
 
                       {/* Greeting */}
                       <motion.h1
                         initial={{ opacity: 0, y: 12 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.4, delay: 0.05 }}
-                        className="text-3xl sm:text-4xl font-bold text-white text-center leading-tight"
+                        className="text-2xl sm:text-4xl font-bold text-white text-center leading-tight"
                       >
                         Hi there. What would you like to explore?
                       </motion.h1>
@@ -1808,17 +1804,17 @@ export default function Dashboard() {
                         initial={{ opacity: 0, y: 8 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.4, delay: 0.1 }}
-                        className="text-sm text-[#9DAFAC]/50 mt-2 text-center"
+                        className="text-xs sm:text-sm text-[#9DAFAC]/50 mt-2 text-center max-w-xs sm:max-w-none"
                       >
                         Upload documents and ask questions — AI-powered citations included.
                       </motion.p>
 
-                      {/* Suggested prompts - Copilot-style pills */}
+                      {/* Suggested prompts - ChatGPT-style pills */}
                       <motion.div
                         initial={{ opacity: 0, y: 8 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.4, delay: 0.15 }}
-                        className="flex flex-wrap items-center justify-center gap-2 mt-8"
+                        className="flex flex-wrap items-center justify-center gap-2 mt-6 sm:mt-8 max-w-sm"
                       >
                         {[
                           "Summarize a document",
@@ -1833,8 +1829,8 @@ export default function Dashboard() {
                             transition={{ delay: 0.2 + i * 0.04, duration: 0.25 }}
                             whileHover={{ y: -1, borderColor: "rgba(0,230,207,0.3)" }}
                             onClick={() => { setInput(prompt); setTimeout(() => handlePaperPlaneRight(), 50); }}
-                            className="px-4 py-2 rounded-full text-xs text-[#9DAFAC]/70 border border-white/[0.08] transition-[colors] duration-300 cursor-pointer"
-                            style={{ background: "rgba(255,255,255,0.03)", backdropFilter: "blur(12px)" }}
+                            className="px-3.5 py-2 rounded-full text-[11px] sm:text-xs text-[#9DAFAC]/70 border border-white/[0.08] transition-[colors] duration-300 cursor-pointer active:scale-95"
+                            style={{ background: "rgba(255,255,255,0.03)" }}
                           >
                             {prompt}
                           </motion.button>
@@ -1844,13 +1840,13 @@ export default function Dashboard() {
                   </div>
                 )}
 
-                {/* ── Prompt Input ── */}
+                {/* ── Prompt Input (ChatGPT-style bottom bar) ── */}
                 <motion.form
                   initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: 0.1 }}
                   onSubmit={handlePaperPlaneRight}
-                  className="shrink-0 relative z-10 px-3 md:px-4 pb-3 md:pb-4 pt-2 md:pt-3 safe-area-bottom"
+                  className="shrink-0 relative z-10 px-2 md:px-4 pb-2 md:pb-4 pt-1.5 md:pt-3 safe-area-bottom"
                 >
                   <div className="max-w-3xl mx-auto">
                     <AutoGrowTextarea
@@ -1859,18 +1855,17 @@ export default function Dashboard() {
                       onSubmit={() => handlePaperPlaneRight()}
                       onStop={stopGeneration}
                       loading={loading}
-                      placeholder={hasRealMessages ? "Ask a question about your documents..." : "Ask anything — try \"Summarize my documents\""}
+                      placeholder={hasRealMessages ? "Ask a question about your documents..." : "Ask anything"}
                       leftSlot={
                         <motion.button
                           type="button"
                           onClick={() => fileInput.current?.click()}
                           disabled={loading}
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
+                          whileTap={{ scale: 0.9 }}
                           aria-label="Attach files"
-                          className="w-8 h-8 rounded-lg hover:bg-white/[0.06] flex items-center justify-center text-white/40 hover:text-white/80 transition-[colors] disabled:opacity-30"
+                          className="w-9 h-9 md:w-8 md:h-8 rounded-lg hover:bg-white/[0.06] flex items-center justify-center text-white/40 hover:text-white/80 transition-[colors] disabled:opacity-30"
                         >
-                          <PaperPlaneRight size={15} className="rotate-45" weight="bold" />
+                          <PaperPlaneRight size={16} className="rotate-45" weight="bold" />
                         </motion.button>
                       }
                       footerSlot={
@@ -1883,12 +1878,8 @@ export default function Dashboard() {
                         />
                       }
                     />
-                    <p className="text-[11px] text-white/30 text-center mt-2.5 flex items-center justify-center gap-3 flex-wrap">
-                      <span>Responses cite sources. Verify important claims against original documents.</span>
-                      <span className="inline-flex items-center gap-1 opacity-60">
-                        <kbd className="px-1 border border-white/10 rounded font-mono text-[10px]">↵</kbd> send
-                        <kbd className="px-1 border border-white/10 rounded font-mono text-[10px] ml-1">⇧↵</kbd> newline
-                      </span>
+                    <p className="text-[10px] md:text-[11px] text-white/25 text-center mt-1.5 md:mt-2.5 px-2 leading-relaxed">
+                      Responses cite sources. Verify important claims against original documents.
                     </p>
                   </div>
                 </motion.form>

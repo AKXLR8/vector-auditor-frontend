@@ -155,7 +155,7 @@ export default function Register() {
         >
           {/* Brand */}
           <motion.div variants={item} className="flex items-center gap-2">
-            <img src="/logo.png" alt="Logo" className="w-8 h-8 object-contain" />
+            <img src="/logo.png" alt="Logo" className="w-10 h-10 object-contain" />
             <span className="text-xl font-semibold tracking-tight">Vector Auditor</span>
           </motion.div>
 

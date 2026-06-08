@@ -601,11 +601,11 @@ input:focus-visible, textarea:focus-visible, select:focus-visible {
 
   /* Simplify liquid glass backgrounds on mobile */
   .liquid-glass-sidebar {
-    background: rgba(8, 10, 14, 0.92) !important;
+    background: rgba(8, 10, 14, 0.96) !important;
     border-radius: 0 !important;
-    border-left: none;
-    border-top: none;
-    border-bottom: none;
+    border: none !important;
+    box-shadow: none !important;
+    width: 100vw !important;
   }
 
   .liquid-glass-sidebar::before,
@@ -620,6 +620,22 @@ input:focus-visible, textarea:focus-visible, select:focus-visible {
 
   .liquid-glass-input::before {
     display: none !important;
+  }
+
+  /* Reduce input area padding on mobile */
+  .safe-area-bottom {
+    padding-bottom: max(env(safe-area-inset-bottom), 8px) !important;
+  }
+
+  /* Better form spacing on mobile */
+  .auth-form-container {
+    padding: 0 20px;
+  }
+
+  /* Bigger touch targets for mobile back button */
+  .mobile-back-btn {
+    min-width: 48px;
+    min-height: 48px;
   }
 
   /* Prevent pull-to-refresh on chat panels */
