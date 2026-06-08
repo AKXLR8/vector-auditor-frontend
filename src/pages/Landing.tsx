@@ -140,12 +140,11 @@ export default function Landing() {
       <div className="fixed inset-0 z-0 pointer-events-none">
         <video
           autoPlay loop muted playsInline
-          className="w-full h-full object-cover pointer-events-none scale-110 hidden md:block"
+          className="w-full h-full object-cover pointer-events-none scale-110"
           style={{ filter: "blur(4px) brightness(0.35)" }}
           src="/video/upscaled-video.mp4"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-[#070E0D]/40 via-transparent to-[#070E0D]/60" />
-        <div className="absolute inset-0 md:hidden bg-[#070E0D]" />
       </div>
 
       {/* ─── Section 1 — Navbar ─────────────────────────── */}
@@ -251,7 +250,7 @@ export default function Landing() {
         >
           <span>Your documents.</span>
           <br />
-          <span className="md:animate-shiny" style={gradientStyle}>
+          <span className="animate-shiny" style={gradientStyle}>
             Revitalized
           </span>
         </motion.h1>

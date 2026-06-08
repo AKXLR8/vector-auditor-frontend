@@ -1599,14 +1599,27 @@ export default function Dashboard() {
         {showVideoBg && (
           <HeroVideo />
         )}
-        {/* Futuristic background layers (hidden on mobile for performance) */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none hidden md:block" aria-hidden="true">
+        {/* Futuristic background layers */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
           <div className="absolute -top-40 -right-40 w-[800px] h-[800px] rounded-full bg-[#3B82F6] opacity-[0.04]"
                style={{ filter: "blur(120px)" }} />
           <div className="absolute -bottom-40 -left-40 w-[700px] h-[700px] rounded-full bg-[#1E3A5F] opacity-[0.1]"
                style={{ filter: "blur(140px)" }} />
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[600px] rounded-full bg-[#3B82F6] opacity-[0.03]"
                style={{ filter: "blur(180px)" }} />
+          {/* Animated glow blob */}
+          <motion.div
+            animate={{ x: [0, 30, -20, 0], y: [0, -20, 30, 0] }}
+            transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+            className="absolute top-1/3 right-1/4 w-[400px] h-[400px] rounded-full bg-[#3B82F6]/[0.03]"
+            style={{ filter: "blur(80px)" }}
+          />
+          <motion.div
+            animate={{ x: [0, -25, 20, 0], y: [0, 30, -15, 0] }}
+            transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
+            className="absolute bottom-1/3 left-1/4 w-[350px] h-[350px] rounded-full bg-[#1E3A5F]/[0.08]"
+            style={{ filter: "blur(100px)" }}
+          />
         </div>
 
         <input ref={fileInput} type="file" multiple accept=".pdf,.md,.txt,.docx" className="hidden" onChange={(e) => handleUpload(e.target.files)} />
@@ -1707,19 +1720,19 @@ export default function Dashboard() {
                                       )}
                                     </div>
                                     {msg.citations && msg.citations.length > 0 && (
-                                      <div className="mt-3 flex flex-wrap gap-1.5">
+                                      <div className="mt-3 flex flex-col sm:flex-row sm:flex-wrap gap-1.5">
                                         {msg.citations.map((c, i) => (
                                           <motion.button key={i}
                                             initial={{ opacity: 0, scale: 0.9 }}
                                             animate={{ opacity: 1, scale: 1 }}
                                             transition={{ delay: i * 0.04 }}
                                             onClick={() => handleCitationClick(c)}
-                                            className="inline-flex items-center gap-1.5 text-[11px] text-[#9DAFAC] hover:text-[#3B82F6] transition-colors py-1 px-2.5 rounded-full bg-white/[0.04] hover:bg-[#3B82F6]/10 ring-1 ring-white/[0.06] hover:ring-[#3B82F6]/30"
+                                            className="inline-flex items-center gap-1.5 text-[11px] text-[#9DAFAC] hover:text-[#3B82F6] transition-colors py-1.5 px-2.5 rounded-full bg-white/[0.04] hover:bg-[#3B82F6]/10 ring-1 ring-white/[0.06] hover:ring-[#3B82F6]/30 w-full sm:w-auto"
                                           >
-                                            <Quotes size={10} />
-                                            <span className="font-mono">[{i + 1}]</span>
-                                            <span className="truncate max-w-[120px]">{c.source}</span>
-                                            {c.page && c.page > 0 && <span className="text-[10px] text-[#9DAFAC]">p.{c.page}</span>}
+                                            <Quotes size={10} className="shrink-0" />
+                                            <span className="font-mono shrink-0">[{i + 1}]</span>
+                                            <span className="truncate min-w-0 flex-1 sm:max-w-[160px]">{c.source}</span>
+                                            {c.page && c.page > 0 && <span className="text-[10px] text-[#9DAFAC] shrink-0 ml-auto">p.{c.page}</span>}
                                           </motion.button>
                                         ))}
                                       </div>
