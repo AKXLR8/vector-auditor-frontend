@@ -17,7 +17,9 @@ import { ChatListSkeleton, DocListSkeleton, MessageSkeleton } from "../component
 import { FileDropZone } from "../components/FileDropZone";
 import { OnboardingEmpty } from "../components/OnboardingEmpty";
 import { ConfirmDialog } from "../components/ConfirmDialog";
+import { HeroVideo } from "../components/HeroVideo";
 import { useDebounce } from "../hooks/useDebounce";
+import { useSwipeGesture } from "../hooks/useSwipeGesture";
 import { useDocumentSync, type DocDiff } from "../hooks/useDocumentSync";
 import { useKeyboardShortcuts } from "../hooks/useKeyboardShortcuts";
 import { useLocalStorage } from "../hooks/useLocalStorage";
@@ -25,6 +27,7 @@ import { errorMessage } from "../lib/errors";
 import { sendQuery, streamQuery, submitFeedback, StreamAbortError } from "../api/query";
 import { uploadDocuments, getDocument, deleteDocument } from "../api/documents";
 import { getUploadProgress } from "../api/uploads";
+import { getApiBaseUrl } from "../api/config";
 import {
   listSessions as apiListSessions,
   createSession as apiCreateSession,
@@ -44,7 +47,7 @@ import {
   Spinner, Robot, WarningCircle, ChatText,
   Quotes, MagnifyingGlass, House,
   Folder, PushPin, PencilSimple, Check, XCircle,
-  Command, Sparkle,
+  Command, Sparkle, List,
 } from "@phosphor-icons/react";
 
 const GROUPS_KEY = "vector_doc_groups";
@@ -273,9 +276,10 @@ export default function Dashboard() {
   const [selectedGroups, setSelectedGroups] = useState<Set<string>>(new Set());
   const [sidebarDragOverGroup, setSidebarDragOverGroup] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const sidebarForcedClosedRef = useRef(false);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<Record<string, { stage: string; progress: number; error?: string }>>({});
-  const [activePdf, setActivePdf] = useState<{ docId: string; citation: Citation; page: number } | null>(null);
+  const [activePdf, setActivePdf] = useState<{ docId: string; citation: Citation; page: number; cloudinaryUrl?: string } | null>(null);
   const [activePanel, setActivePanel] = useState<"documents" | null>(null);
 
   const [chatSearch, setChatSearch] = useState("");
@@ -304,9 +308,18 @@ export default function Dashboard() {
   const sessionsRef = useRef<LocalSession[]>(sessions);
   sessionsRef.current = sessions;
   const sessionFetchTokenRef = useRef(0);
+  const sessionCreateInflightRef = useRef<Set<string>>(new Set());
   const userLoadTokenRef = useRef(0);
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const navigate = useNavigate();
+
+  const isMobile = typeof window !== "undefined" && window.matchMedia("(max-width: 768px)").matches;
+  useSwipeGesture({
+    onSwipeRight: () => { if (isMobile) setSidebarOpen(true); },
+    onSwipeLeft: () => { if (isMobile && sidebarOpen) setSidebarOpen(false); },
+    threshold: 60,
+    enabled: isMobile,
+  });
 
   const mapServerMessages = (raw: any[]): Message[] =>
     (raw || []).map((m: any) => ({
@@ -364,7 +377,7 @@ export default function Dashboard() {
     { key: "/", ctrl: true, handler: () => fileInput.current?.click() },
     { key: "n", meta: true, handler: () => newChat(), allowInInputs: true },
     { key: "n", ctrl: true, handler: () => newChat(), allowInInputs: true },
-    { key: "Escape", handler: () => { if (paletteOpen) setPaletteOpen(false); if (activePanel === "documents") setActivePanel(null); } },
+    { key: "Escape", handler: () => { if (paletteOpen) setPaletteOpen(false); if (activePanel === "documents") setActivePanel(null); if (activePdf) setActivePdf(null); } },
   ]);
 
   const onDropFiles = (files: FileList | null) => {
@@ -459,29 +472,32 @@ export default function Dashboard() {
       for (const ls of localSessions) {
         if (!seenIds.has(ls.id)) {
           merged.push(ls);
-          apiCreateSession(ls.title, ls.id).catch(() => {});
         }
       }
       setSessions(merged);
       saveSessions(uid, merged);
-      const activeId = loadActiveId(uid);
-      const session = merged.find((s) => s.id === activeId);
-      if (activeId && session) {
-        setActiveSessionId(activeId);
-        setMessages(session.messages.length > 0 ? session.messages : [freshWelcome()]);
-        fetchAndApplySessionMessages(activeId, myToken, userLoadTokenRef);
+      if (urlSessionId && merged.some((s) => s.id === urlSessionId)) {
+        const s = merged.find((x) => x.id === urlSessionId)!;
+        setActiveSessionId(s.id);
+        setMessages(s.messages.length > 0 ? s.messages : [freshWelcome()]);
+        fetchAndApplySessionMessages(s.id, myToken, userLoadTokenRef);
       } else {
         setActiveSessionId(null);
         setMessages([freshWelcome()]);
+        saveActiveId(uid, null);
       }
     }).catch(() => {
       if (myToken !== userLoadTokenRef.current) return;
-      const loaded = loadSessions(uid);
-      setSessions(loaded);
-      const activeId = loadActiveId(uid);
-      const session = loaded.find((s) => s.id === activeId);
-      setActiveSessionId(activeId);
-      setMessages(session?.messages?.length ? session.messages : [freshWelcome()]);
+      setSessions(localSessions);
+      if (urlSessionId && localSessions.some((s) => s.id === urlSessionId)) {
+        const s = localSessions.find((x) => x.id === urlSessionId)!;
+        setActiveSessionId(s.id);
+        setMessages(s.messages.length > 0 ? s.messages : [freshWelcome()]);
+      } else {
+        setActiveSessionId(null);
+        setMessages([freshWelcome()]);
+        saveActiveId(uid, null);
+      }
     });
   }, [user?.id, fetchAndApplySessionMessages]);
 
@@ -492,7 +508,29 @@ export default function Dashboard() {
   }, [uid, refetch]);
 
   useEffect(() => {
-    messagesEnd.current?.scrollIntoView({ behavior: "smooth" });
+    if (activePdf && sidebarOpen) {
+      sidebarForcedClosedRef.current = true;
+      setSidebarOpen(false);
+    } else if (!activePdf && sidebarForcedClosedRef.current) {
+      sidebarForcedClosedRef.current = false;
+      setSidebarOpen(true);
+    }
+  }, [activePdf]);
+
+  const firstScrollDoneRef = useRef(false);
+  useEffect(() => {
+    const el = chatContainerRef.current;
+    const target = messagesEnd.current;
+    if (!el || !target) return;
+    if (!firstScrollDoneRef.current) {
+      target.scrollIntoView({ block: "end" });
+      firstScrollDoneRef.current = true;
+      return;
+    }
+    const distance = el.scrollHeight - el.scrollTop - el.clientHeight;
+    if (distance < 400) {
+      target.scrollIntoView({ behavior: "smooth", block: "end" });
+    }
   }, [messages]);
 
   useEffect(() => {
@@ -692,6 +730,26 @@ export default function Dashboard() {
     fetchAndApplySessionMessages(session.id, myToken, sessionFetchTokenRef);
   };
 
+  const ensureServerSession = useCallback(
+    (id: string, title: string) => {
+      const inflight = sessionCreateInflightRef.current;
+      if (inflight.has(id)) return;
+      inflight.add(id);
+      apiCreateSession(title || "New Chat", id)
+        .catch((err) => {
+          inflight.delete(id);
+          const status = err?.response?.status;
+          if (status && status !== 409) {
+            toast.error("Couldn't sync chat to server — saved locally only.");
+          }
+        })
+        .finally(() => {
+          window.setTimeout(() => inflight.delete(id), 30_000);
+        });
+    },
+    []
+  );
+
   const newChat = async () => {
     const id = crypto.randomUUID();
     const newSession: LocalSession = {
@@ -708,7 +766,15 @@ export default function Dashboard() {
     setActiveSessionId(id);
     saveActiveId(uid, id);
     setMessages(newSession.messages);
-    apiCreateSession("New Chat", id).catch(() => {});
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.set("c", id);
+        return next;
+      },
+      { replace: true }
+    );
+    ensureServerSession(id, "New Chat");
     toast.success("New chat started");
   };
 
@@ -771,6 +837,25 @@ export default function Dashboard() {
       setMessages((p) => [...p, userMsg, assistantPlaceholder]);
     }
     setLoading(true);
+
+    let sessionId = activeSessionId;
+    if (!sessionId && !opts.assistantIdToReplace) {
+      sessionId = crypto.randomUUID();
+      const newSession: LocalSession = {
+        id: sessionId,
+        title: "New Chat",
+        messages: [],
+        createdAt: new Date().toISOString(),
+      };
+      setSessions((prev) => {
+        const updated = [newSession, ...prev];
+        saveSessions(uid, updated);
+        return updated;
+      });
+      setActiveSessionId(sessionId);
+      saveActiveId(uid, sessionId);
+      ensureServerSession(sessionId, "New Chat");
+    }
 
     const controller = new AbortController();
     abortControllerRef.current = controller;
@@ -849,11 +934,11 @@ export default function Dashboard() {
         )
       );
 
-      if (activeSessionId && !opts.assistantIdToReplace) {
-        const synced = getSyncedSet(activeSessionId);
+      if (sessionId && !opts.assistantIdToReplace) {
+        const synced = getSyncedSet(sessionId);
         synced.add(userMsg.id);
-        persistSyncedSet(activeSessionId, synced);
-        apiAddMessage(activeSessionId, { role: "user", content: queryText }).catch(() => {});
+        persistSyncedSet(sessionId, synced);
+        apiAddMessage(sessionId, { role: "user", content: queryText }).catch(() => {});
       }
     } catch (err: any) {
       if (err instanceof StreamAbortError) {
@@ -1047,7 +1132,11 @@ export default function Dashboard() {
 
   const handleCitationClick = async (citation: Citation) => {
     const page = citation.page && citation.page > 0 ? citation.page : 1;
-    setActivePdf({ docId: citation.source, citation, page });
+    const docId = citation.document_id || docs.find((d) => d.filename === citation.source)?.document_id
+      || docs.find((d) => d.filename === citation.source)?.id
+      || citation.source;
+    const cloudinaryUrl = `${getApiBaseUrl()}/documents/${docId}/pdf`;
+    setActivePdf({ docId, citation, page, cloudinaryUrl });
     setActivePanel(null);
   };
   handleCitationClickRef.current = handleCitationClick;
@@ -1082,7 +1171,7 @@ export default function Dashboard() {
       <div
         key={session.id}
         onClick={() => { if (!isEditing) switchToSession(session); }}
-        className={`group relative flex items-center gap-1.5 px-2.5 py-2 rounded-xl cursor-pointer transition-all duration-200 ml-1 ${
+        className={`group relative flex items-center gap-1.5 px-2.5 py-2.5 sm:py-2 rounded-xl cursor-pointer transition-[colors,opacity] duration-200 ml-1 ${
           isActive
             ? "bg-white/[0.07] border border-white/[0.1]"
             : "hover:bg-white/[0.04] border border-transparent"
@@ -1204,7 +1293,7 @@ export default function Dashboard() {
       <motion.aside
         animate={{ x: sidebarOpen ? 0 : -300 }}
         transition={{ type: "spring", damping: 28, stiffness: 260 }}
-        className="fixed top-3 bottom-3 left-3 z-30 w-[300px] flex flex-col overflow-hidden liquid-glass-sidebar"
+        className="fixed top-3 bottom-3 left-3 z-30 w-[300px] flex flex-col overflow-hidden liquid-glass-sidebar will-change-[transform] safe-area-top safe-area-bottom"
       >
         {/* Logo */}
         <div className="flex items-center gap-2 px-4 pt-4 pb-1 shrink-0">
@@ -1215,7 +1304,7 @@ export default function Dashboard() {
         {/* Search + command palette trigger */}
         <div className="px-3 pt-2 pb-2 shrink-0 space-y-2">
           <div className="flex items-center gap-2">
-            <div className="flex-1 flex items-center gap-2 px-3 h-9 rounded-xl bg-white/[0.04] border border-white/[0.06] text-sm transition-all duration-200 focus-within:border-[#3B82F6]/30 focus-within:bg-white/[0.06]">
+            <div className="flex-1 flex items-center gap-2 px-3 h-9 rounded-xl bg-white/[0.04] border border-white/[0.06] text-sm transition-[colors] duration-200 focus-within:border-[#3B82F6]/30 focus-within:bg-white/[0.06]">
               <MagnifyingGlass size={14} className="shrink-0 text-white/40" />
               <input
                 value={chatSearch}
@@ -1240,7 +1329,7 @@ export default function Dashboard() {
               onClick={() => setPaletteOpen(true)}
               aria-label="Open command palette"
               title="Command palette (⌘K)"
-              className="w-9 h-9 rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center text-white/40 hover:text-white hover:bg-white/[0.06] transition-all"
+              className="w-9 h-9 rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center text-white/40 hover:text-white hover:bg-white/[0.06] transition-[colors] duration-200"
             >
               <Command size={14} weight="bold" />
             </button>
@@ -1250,7 +1339,7 @@ export default function Dashboard() {
         {/* Menu items */}
         <div className="px-3 space-y-1 shrink-0">
           <button onClick={newChat}
-            className="w-full flex items-center justify-center gap-2 h-10 rounded-xl text-sm font-semibold text-white transition-all duration-300 active:scale-[0.97]"
+            className="w-full flex items-center justify-center gap-2 h-10 rounded-xl text-sm font-semibold text-white transition-[colors,transform] duration-300 active:scale-[0.97]"
             style={{ background: "linear-gradient(135deg, #3B82F6, #1E3A5F)" }}
           >
             <Plus size={15} weight="bold" />
@@ -1258,7 +1347,7 @@ export default function Dashboard() {
           </button>
           <Link
             to="/analysis"
-            className="w-full flex items-center gap-2 h-9 px-3 rounded-xl text-xs font-medium text-white/70 hover:text-white hover:bg-white/[0.05] transition-all duration-200"
+            className="w-full flex items-center gap-2 h-9 px-3 rounded-xl text-xs font-medium text-white/70 hover:text-white hover:bg-white/[0.05] transition-[colors] duration-200"
           >
             <Sparkle size={13} weight="bold" className="text-[#60A5FA]" />
             Analysis
@@ -1312,7 +1401,7 @@ export default function Dashboard() {
           {/* ── Documents section ── */}
           <div>
             <div className="flex items-center justify-between px-1 py-1">
-              <button onClick={() => { setActivePanel("documents"); setActivePdf(null); }} className="flex items-center gap-1.5 text-sm font-medium text-[#9DAFAC]/80 hover:text-[#3B82F6] transition-all duration-300">
+              <button onClick={() => { setActivePanel("documents"); setActivePdf(null); }} className="flex items-center gap-1.5 text-sm font-medium text-[#9DAFAC]/80 hover:text-[#3B82F6] transition-[colors] duration-300">
                 <FileText size={14} /> Documents <span className="font-normal text-xs text-[#9DAFAC]/40">{docsLoading ? <Spinner size={10} className="animate-spin inline" /> : `(${dedupedDocs.length})`}</span>
               </button>
               {dedupedDocs.length > 0 && (
@@ -1335,10 +1424,11 @@ export default function Dashboard() {
                     </div>
                     <div className="w-full h-1 rounded-full bg-white/[0.06] overflow-hidden">
                       <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${prog.progress}%` }}
+                        initial={{ scaleX: 0 }}
+                        animate={{ scaleX: prog.progress / 100 }}
                         transition={{ duration: 0.5, ease: "easeOut" }}
-                        className={`h-full rounded-full ${
+                        style={{ transformOrigin: "left" }}
+                        className={`h-full rounded-full will-change-[transform] ${
                           prog.stage === "failed"
                             ? "bg-red-500"
                             : prog.stage === "completed"
@@ -1366,7 +1456,7 @@ export default function Dashboard() {
                   const allSelected = group.documentIds.length > 0 && group.documentIds.every((did) => selectedDocs.has(did));
                   return (
                     <div key={group.id}
-                      className={`group flex items-center gap-2 px-2.5 py-2 rounded-xl text-sm transition-all duration-300 cursor-pointer ${
+                      className={`group flex items-center gap-2 px-2.5 py-2.5 sm:py-2 rounded-xl text-sm transition-[colors] duration-300 cursor-pointer ${
                         sidebarDragOverGroup === group.id
                           ? "bg-[#3B82F6]/10 border border-[#3B82F6]/30"
                           : "hover:bg-white/[0.03]"
@@ -1433,7 +1523,7 @@ export default function Dashboard() {
                         draggable
                         onDragStart={(e) => sidebarHandleDragStart(e, did)}
                         title={name}
-                        className="group flex items-center gap-2 px-2.5 py-2 rounded-xl text-sm hover:bg-white/[0.03] transition-all duration-200 cursor-pointer"
+                        className="group flex items-center gap-2 px-2.5 py-2.5 sm:py-2 rounded-xl text-sm hover:bg-white/[0.03] transition-[colors] duration-200 cursor-pointer"
                         onClick={() => toggleDoc(did)}
                       >
                         <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors ${isSelected ? "bg-[#3B82F6] border-[#3B82F6]" : "border-white/[0.15]"}`}>
@@ -1457,7 +1547,7 @@ export default function Dashboard() {
                           setConfirmDeleteId(did);
                         }}
                           disabled={deletingIds.has(did)}
-                          className="w-5 h-5 rounded hover:bg-red-500/10 flex items-center justify-center text-[#9DAFAC]/30 hover:text-red-400 transition-all shrink-0 opacity-0 group-hover:opacity-100 disabled:opacity-100 disabled:cursor-not-allowed"
+                          className="w-5 h-5 rounded hover:bg-red-500/10 flex items-center justify-center text-[#9DAFAC]/30 hover:text-red-400 transition-[colors,opacity] shrink-0 opacity-0 group-hover:opacity-100 disabled:opacity-100 disabled:cursor-not-allowed"
                           title="Delete">
                           {deletingIds.has(did) ? <Spinner size={10} className="animate-spin" /> : <X size={11} />}
                         </button>
@@ -1481,12 +1571,12 @@ export default function Dashboard() {
           {isAdmin && (
             <Link to="/admin" className="flex items-center gap-2 px-3 py-1.5 text-xs text-[#3B82F6]/70 hover:bg-white/[0.03] transition-colors">Admin Panel</Link>
           )}
-          <Link to="/" className="w-full flex items-center justify-center gap-2 py-2 text-xs text-[#9DAFAC]/50 hover:text-[#3B82F6] hover:bg-[#3B82F6]/5 transition-all duration-300">
+          <Link to="/" className="w-full flex items-center justify-center gap-2 py-2 text-xs text-[#9DAFAC]/50 hover:text-[#3B82F6] hover:bg-[#3B82F6]/5 transition-[colors] duration-300">
             <House size={13} />
             Home
           </Link>
           <button onClick={logoutAndReset}
-            className="w-full flex items-center justify-center gap-2 py-2 text-xs text-[#9DAFAC]/50 hover:text-red-400 hover:bg-red-500/5 transition-all duration-300"
+            className="w-full flex items-center justify-center gap-2 py-2 text-xs text-[#9DAFAC]/50 hover:text-red-400 hover:bg-red-500/5 transition-[colors] duration-300"
           >
             <SignOut size={13} />
             Sign Out
@@ -1495,15 +1585,10 @@ export default function Dashboard() {
       </motion.aside>
 
       {/* ── Main Content ── */}
-      <main className="flex-1 flex flex-col min-w-0 relative">
-        {/* Video Background (hero only) */}
+      <main className="flex-1 flex flex-col min-w-0 relative contain-[layout]">
+        {/* Video Background (hero only, lazy-mounted after idle) */}
         {showVideoBg && (
-          <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
-            <video autoPlay loop muted playsInline className="w-full h-full object-cover pointer-events-none scale-110" style={{ filter: "blur(4px) brightness(0.35)" }}>
-              <source src="/video/upscaled-video.mp4" type="video/mp4" />
-            </video>
-            <div className="absolute inset-0 bg-gradient-to-b from-[#070E0D]/40 via-transparent to-[#070E0D]/60" />
-          </div>
+          <HeroVideo />
         )}
         {/* Futuristic background layers */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
@@ -1532,22 +1617,31 @@ export default function Dashboard() {
 
         {/* ── Content Area ── */}
         <FileDropZone onFiles={onDropFiles} disabled={loading} className="flex-1 flex overflow-hidden relative">
+          {/* Mobile sidebar toggle */}
+          {!sidebarOpen && (
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="md:hidden fixed top-4 left-4 z-40 w-10 h-10 rounded-xl bg-white/[0.08] backdrop-blur-md border border-white/[0.1] flex items-center justify-center text-white/70 hover:text-white hover:bg-white/[0.12] transition-[colors] active:scale-95"
+              aria-label="Open menu"
+            >
+              <List size={18} weight="bold" />
+            </button>
+          )}
           <div className="flex-1 flex overflow-hidden relative">
             <div className="flex-1 flex flex-col min-w-0 relative z-10">
               <>
                 {hasRealMessages ? (
                   /* ── Chat messages view ── */
                   <>
-                    <div ref={chatContainerRef} className="flex-1 overflow-y-auto px-4 py-6 relative">
+                    <div ref={chatContainerRef} className="flex-1 overflow-y-auto px-4 py-6 relative will-change-[scroll-position]">
                       <div className="max-w-3xl mx-auto space-y-4">
                         <AnimatePresence initial={false}>
                           {messages.map((msg, idx) => (
                             <motion.div
                               key={msg.id}
-                              layout
-                              initial={{ opacity: 0, y: 24, scale: 0.96 }}
+                              initial={false}
                               animate={{ opacity: 1, y: 0, scale: 1 }}
-                              transition={{ type: "spring", damping: 22, stiffness: 280, mass: 0.6, delay: idx === messages.length - 1 ? 0 : idx * 0.02 }}
+                              transition={{ type: "spring", damping: 24, stiffness: 320, mass: 0.5, delay: idx === messages.length - 1 && firstScrollDoneRef.current ? 0.05 : 0 }}
                               className={`flex gap-3 items-start ${msg.role === "user" ? "flex-row-reverse" : ""}`}
                             >
                               <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5 ${
@@ -1703,17 +1797,17 @@ export default function Dashboard() {
 
                       {/* Greeting */}
                       <motion.h1
-                        initial={{ opacity: 0, y: 16 }}
+                        initial={{ opacity: 0, y: 12 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6, delay: 0.2 }}
+                        transition={{ duration: 0.4, delay: 0.05 }}
                         className="text-3xl sm:text-4xl font-bold text-white text-center leading-tight"
                       >
                         Hi there. What would you like to explore?
                       </motion.h1>
                       <motion.p
-                        initial={{ opacity: 0, y: 12 }}
+                        initial={{ opacity: 0, y: 8 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.5, delay: 0.35 }}
+                        transition={{ duration: 0.4, delay: 0.1 }}
                         className="text-sm text-[#9DAFAC]/50 mt-2 text-center"
                       >
                         Upload documents and ask questions — AI-powered citations included.
@@ -1721,9 +1815,9 @@ export default function Dashboard() {
 
                       {/* Suggested prompts - Copilot-style pills */}
                       <motion.div
-                        initial={{ opacity: 0, y: 16 }}
+                        initial={{ opacity: 0, y: 8 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.5, delay: 0.5 }}
+                        transition={{ duration: 0.4, delay: 0.15 }}
                         className="flex flex-wrap items-center justify-center gap-2 mt-8"
                       >
                         {[
@@ -1734,12 +1828,12 @@ export default function Dashboard() {
                         ].map((prompt, i) => (
                           <motion.button
                             key={prompt}
-                            initial={{ opacity: 0, scale: 0.9 }}
+                            initial={{ opacity: 0, scale: 0.96 }}
                             animate={{ opacity: 1, scale: 1 }}
-                            transition={{ delay: 0.6 + i * 0.08 }}
+                            transition={{ delay: 0.2 + i * 0.04, duration: 0.25 }}
                             whileHover={{ y: -1, borderColor: "rgba(0,230,207,0.3)" }}
                             onClick={() => { setInput(prompt); setTimeout(() => handlePaperPlaneRight(), 50); }}
-                            className="px-4 py-2 rounded-full text-xs text-[#9DAFAC]/70 border border-white/[0.08] transition-all duration-300 cursor-pointer"
+                            className="px-4 py-2 rounded-full text-xs text-[#9DAFAC]/70 border border-white/[0.08] transition-[colors] duration-300 cursor-pointer"
                             style={{ background: "rgba(255,255,255,0.03)", backdropFilter: "blur(12px)" }}
                           >
                             {prompt}
@@ -1756,7 +1850,7 @@ export default function Dashboard() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: 0.1 }}
                   onSubmit={handlePaperPlaneRight}
-                  className="shrink-0 relative z-10 px-4 pb-4 pt-3"
+                  className="shrink-0 relative z-10 px-4 pb-4 pt-3 safe-area-bottom"
                 >
                   <div className="max-w-3xl mx-auto">
                     <AutoGrowTextarea
@@ -1774,7 +1868,7 @@ export default function Dashboard() {
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
                           aria-label="Attach files"
-                          className="w-8 h-8 rounded-lg hover:bg-white/[0.06] flex items-center justify-center text-white/40 hover:text-white/80 transition-all disabled:opacity-30"
+                          className="w-8 h-8 rounded-lg hover:bg-white/[0.06] flex items-center justify-center text-white/40 hover:text-white/80 transition-[colors] disabled:opacity-30"
                         >
                           <PaperPlaneRight size={15} className="rotate-45" weight="bold" />
                         </motion.button>
@@ -1805,11 +1899,11 @@ export default function Dashboard() {
             {activePanel === "documents" && (
               <motion.aside
                 key="docs-panel"
-                initial={{ width: 0, opacity: 0 }}
-                animate={{ width: "50%", opacity: 1 }}
-                exit={{ width: 0, opacity: 0 }}
-                transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-                className="border-l border-white/[0.06] bg-[#070E0D] flex flex-col overflow-hidden shrink-0 min-w-0 relative z-20"
+                initial={{ clipPath: "inset(0 100% 0 0)", opacity: 0 }}
+                animate={{ clipPath: "inset(0 0% 0 0)", opacity: 1 }}
+                exit={{ clipPath: "inset(0 100% 0 0)", opacity: 0 }}
+                transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                className="w-full md:w-1/2 border-l border-white/[0.06] bg-[#070E0D] flex flex-col overflow-hidden shrink-0 min-w-0 relative z-20 will-change-[clip-path]"
               >
                 <DocumentsPanel
                   docs={dedupedDocs}
@@ -1830,11 +1924,12 @@ export default function Dashboard() {
               </motion.aside>
             )}
             {activePdf && (
-              <div className="w-1/2 border-l border-white/[0.06] bg-[#070E0D] flex flex-col overflow-hidden shrink-0 min-w-0 relative z-20">
+              <div className="w-full md:w-1/2 border-l border-white/[0.06] bg-[#070E0D] flex flex-col overflow-hidden shrink-0 min-w-0 relative z-20">
                 <DocumentViewer
                   docId={activePdf.docId}
                   citation={activePdf.citation}
                   page={activePdf.page}
+                  cloudinaryUrl={activePdf.cloudinaryUrl}
                   onClose={() => { setActivePdf(null); }}
                 />
               </div>

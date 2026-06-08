@@ -107,14 +107,17 @@ export default function Analysis() {
     setError(null);
     setResult(null);
     try {
-      const body: { question?: string; document_ids?: string[]; max_citations?: number } = {
+      const allIds = readyDocs.map((d) => d.document_id ?? d.id).filter(Boolean) as string[];
+      const docIds =
+        selectedIds.length === 0 || selectedIds.length >= readyDocs.length
+          ? allIds
+          : selectedIds.filter((id) => allIds.includes(id));
+      const body: { question?: string; document_ids: string[]; max_citations?: number } = {
+        document_ids: docIds,
         max_citations: maxCitations,
       };
       const trimmedFocus = focusTopic.trim();
       if (trimmedFocus) body.question = trimmedFocus;
-      if (selectedIds.length > 0 && selectedIds.length < readyDocs.length) {
-        body.document_ids = selectedIds;
-      }
       const data = await analyzeDocuments(body);
       setResult(data);
     } catch (err) {

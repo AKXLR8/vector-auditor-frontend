@@ -22,6 +22,7 @@ export interface Citation {
   source: string;
   location: string;
   page?: number;
+  document_id?: string;
 }
 
 export interface QueryResponse {

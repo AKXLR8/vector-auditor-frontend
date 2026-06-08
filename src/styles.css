@@ -20,6 +20,22 @@
   --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
 }
 
+/* ── Safe area insets for notched phones ─── */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  .safe-area-left {
+    padding-left: env(safe-area-inset-left);
+  }
+  .safe-area-right {
+    padding-right: env(safe-area-inset-right);
+  }
+}
+
 * { scrollbar-width: thin; scrollbar-color: #2a2a30 transparent; }
 
 body {
@@ -97,7 +113,7 @@ body {
 }
 
 /* ── Typing dots ──────────────────────────────── */
-.typing-dot { animation: bounce 1.4s infinite both; }
+.typing-dot { animation: bounce 1.4s infinite both; will-change: transform; }
 .typing-dot:nth-child(2) { animation-delay: 0.2s; }
 .typing-dot:nth-child(3) { animation-delay: 0.4s; }
 @keyframes bounce { 0%,80%,100% { transform: scale(0.7); } 40% { transform: scale(1); } }
@@ -123,6 +139,7 @@ body {
 }
 .diffuse-in {
   animation: diffuse 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  will-change: transform, opacity, filter;
 }
 
 /* ── Sidebar transition ───────────────────────── */
@@ -304,6 +321,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible {
     radial-gradient(ellipse 50% 30% at 25% 15%, rgba(255, 255, 255, 0.05), transparent 60%),
     radial-gradient(ellipse 40% 25% at 75% 85%, rgba(96, 165, 250, 0.07), transparent 60%);
   animation: liquidDrift 22s ease-in-out infinite;
+  will-change: transform;
 }
 .liquid-glass-sidebar > * {
   position: relative;
@@ -530,4 +548,32 @@ input:focus-visible, textarea:focus-visible, select:focus-visible {
 
 @media (max-width: 768px) {
   .c3-watermark-line-2 { background: none; -webkit-text-fill-color: #3B82F6; color: #3B82F6; }
+
+  /* Improve touch targets on mobile */
+  button, a, [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Disable hover effects on touch devices */
+  *:hover {
+    transform: none !important;
+  }
+
+  /* Smooth scrolling for mobile */
+  .overflow-y-auto {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Prevent text selection on interactive elements */
+  button, a, [role="button"] {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* Improve input focus on mobile */
+  input, textarea, select {
+    font-size: 16px !important;
+  }
 }

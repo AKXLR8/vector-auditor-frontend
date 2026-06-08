@@ -32,6 +32,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const expiryWarningShown = useRef(false);
+  const loggingOutRef = useRef(false);
 
   const REFRESH_THRESHOLD_SEC = 86400; // 1 day — must match backend REFRESH_THRESHOLD_MINUTES
 
@@ -59,12 +60,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const doRefresh = async () => {
+    if (loggingOutRef.current) return;
     try {
       const { data } = await client.get("/auth/token/refresh");
+      if (loggingOutRef.current) return;
+      loggingOutRef.current = false;
       localStorage.setItem(TOKEN_KEY, data.access_token);
       setToken(data.access_token);
       expiryWarningShown.current = false;
     } catch {
+      if (loggingOutRef.current) return;
       // refresh failed — tokens will expire naturally, interceptor handles 401s
     }
   };
@@ -103,6 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [token]);
 
   const setTokenAndSchedule = (newToken: string) => {
+    loggingOutRef.current = false;
     localStorage.setItem(TOKEN_KEY, newToken);
     setToken(newToken);
     expiryWarningShown.current = false;
@@ -123,16 +129,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
+    loggingOutRef.current = true;
+    if (refreshTimer.current) {
+      clearTimeout(refreshTimer.current);
+      refreshTimer.current = null;
+    }
     try {
       await authApi.logout();
     } catch {
       // ignore
     }
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
-    setToken(null);
-    setUser(null);
-    if (refreshTimer.current) clearTimeout(refreshTimer.current);
+    if (loggingOutRef.current) {
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(USER_KEY);
+      setToken(null);
+      setUser(null);
+      try {
+        window.sessionStorage.setItem("va:logged-out", "1");
+      } catch {
+        /* ignore */
+      }
+    }
   };
 
   const isAuthenticated = !!token;

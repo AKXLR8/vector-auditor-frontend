@@ -3,6 +3,7 @@ import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/TextLayer.css";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import { FileText, X, CaretLeft, CaretRight, Spinner } from "@phosphor-icons/react";
+import { getDocument } from "../api/documents";
 import { getApiBaseUrl } from "../api/config";
 import type { Citation } from "../types";
 
@@ -16,14 +17,18 @@ interface Props {
   citation: Citation;
   page: number;
   onClose: () => void;
+  cloudinaryUrl?: string;
 }
 
-export default function DocumentViewer({ docId, citation, page: initialPage, onClose }: Props) {
+export default function DocumentViewer({ docId, citation, page: initialPage, onClose, cloudinaryUrl }: Props) {
   const [numPages, setNumPages] = useState(0);
   const [pageNumber, setPageNumber] = useState(initialPage);
   const [pageLoaded, setPageLoaded] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(0);
+  const [pdfUrl, setPdfUrl] = useState<string | null>(cloudinaryUrl || null);
+  const [resolving, setResolving] = useState(true);
+  const [viewerMode, setViewerMode] = useState<"react-pdf" | "iframe" | "none">("react-pdf");
 
   useEffect(() => {
     setPageNumber(initialPage);
@@ -42,16 +47,41 @@ export default function DocumentViewer({ docId, citation, page: initialPage, onC
     return () => observer.disconnect();
   }, []);
 
-  const token = useMemo(() => localStorage.getItem("access_token") || "", []);
+  useEffect(() => {
+    let cancelled = false;
 
-  const fileUrl = useMemo(() => ({
-    url: `${getApiBaseUrl()}/documents/${docId}/pdf`,
-    withCredentials: false,
-  }), [docId]);
+    async function resolveUrl() {
+      setResolving(true);
 
-  const options = useMemo(() => ({
-    httpHeaders: { Authorization: `Bearer ${token}` },
-  }), [token]);
+      if (cloudinaryUrl) {
+        if (!cancelled) {
+          setPdfUrl(cloudinaryUrl);
+          setResolving(false);
+        }
+        return;
+      }
+
+      try {
+        const doc = await getDocument(docId);
+        if (!cancelled && doc.cloudinary_url) {
+          setPdfUrl(doc.cloudinary_url);
+          setResolving(false);
+          return;
+        }
+      } catch {
+        /* doc fetch failed — fall through to proxy fallback */
+      }
+
+      if (!cancelled) {
+        const fallback = `${getApiBaseUrl()}/documents/${docId}/pdf`;
+        setPdfUrl(fallback);
+        setResolving(false);
+      }
+    }
+
+    resolveUrl();
+    return () => { cancelled = true; };
+  }, [cloudinaryUrl, docId]);
 
   const onLoadSuccess = useCallback(({ numPages: n }: { numPages: number }) => {
     setNumPages(n);
@@ -104,7 +134,7 @@ export default function DocumentViewer({ docId, citation, page: initialPage, onC
       <div className="flex items-center gap-3 px-4 h-14 glass-header shrink-0">
         <FileText size={16} className="text-[#00d2ff]" />
         <span className="text-sm font-medium truncate flex-1">{citation.source}</span>
-        {pageNumber > 0 && (
+        {pageNumber > 0 && viewerMode === "react-pdf" && (
           <span className="text-[11px] text-[#6e7681] font-mono">p. {pageNumber}</span>
         )}
         <button onClick={onClose}
@@ -125,11 +155,31 @@ export default function DocumentViewer({ docId, citation, page: initialPage, onC
       )}
 
       <div ref={containerRef} className="flex-1 overflow-auto bg-[#0a0a0c] relative">
-        {width > 0 && (
+        {resolving && (
+          <div className="flex items-center justify-center h-full">
+            <div className="flex flex-col items-center gap-3 text-[#6e7681]">
+              <Spinner size={24} className="animate-spin" />
+              <span className="text-sm">Loading document...</span>
+            </div>
+          </div>
+        )}
+
+        {!resolving && !pdfUrl && (
+          <div className="flex items-center justify-center h-full p-8">
+            <div className="text-center">
+              <p className="text-sm text-red-400 mb-2">PDF URL not available for this document.</p>
+              <p className="text-xs text-[#6e7681]">The document may not have been uploaded to cloud storage.</p>
+            </div>
+          </div>
+        )}
+
+        {!resolving && pdfUrl && viewerMode === "react-pdf" && width > 0 && (
           <Document
-            file={fileUrl}
-            options={options}
+            file={pdfUrl}
             onLoadSuccess={onLoadSuccess}
+            onLoadError={() => {
+              setViewerMode("iframe");
+            }}
             loading={
               <div className="flex items-center justify-center h-full">
                 <div className="flex flex-col items-center gap-3 text-[#6e7681]">
@@ -140,7 +190,15 @@ export default function DocumentViewer({ docId, citation, page: initialPage, onC
             }
             error={
               <div className="flex items-center justify-center h-full p-8">
-                <p className="text-sm text-red-400">Failed to load PDF document.</p>
+                <div className="text-center">
+                  <p className="text-sm text-red-400 mb-3">Failed to load PDF viewer.</p>
+                  <button
+                    onClick={() => setViewerMode("iframe")}
+                    className="text-xs text-[#3B82F6] hover:underline"
+                  >
+                    Try alternative viewer
+                  </button>
+                </div>
               </div>
             }
           >
@@ -157,8 +215,17 @@ export default function DocumentViewer({ docId, citation, page: initialPage, onC
             />
           </Document>
         )}
-        {!pageLoaded && width > 0 && (
-          <div className="absolute inset-0 flex items-center justify-center bg-[#0a0a0c]/80">
+
+        {!resolving && pdfUrl && viewerMode === "iframe" && (
+          <iframe
+            src={pdfUrl}
+            className="w-full h-full border-0"
+            title={citation.source}
+          />
+        )}
+
+        {!pageLoaded && viewerMode === "react-pdf" && !resolving && pdfUrl && width > 0 && (
+          <div className="absolute inset-0 flex items-center justify-center bg-[#0a0a0c]/80 pointer-events-none">
             <div className="flex flex-col items-center gap-3 text-[#6e7681]">
               <Spinner size={24} className="animate-spin" />
               <span className="text-sm">Rendering page {pageNumber}...</span>
@@ -167,7 +234,7 @@ export default function DocumentViewer({ docId, citation, page: initialPage, onC
         )}
       </div>
 
-      {numPages > 1 && (
+      {numPages > 1 && viewerMode === "react-pdf" && (
         <div className="flex items-center justify-center gap-3 px-4 py-2.5 border-t border-[#2a2a30]/30 bg-[#141416] shrink-0">
           <button
             onClick={() => goToPage(pageNumber - 1)}
