@@ -93,7 +93,7 @@ function ActionButton({ children, onClick, disabled, active, label }: {
       disabled={disabled}
       title={label}
       aria-label={label}
-      className={`inline-flex items-center justify-center w-7 h-7 rounded-md transition-all ${
+      className={`inline-flex items-center justify-center w-7 h-7 md:w-7 md:h-7 rounded-md transition-all active:scale-90 ${
         active
           ? "bg-white/10 text-white"
           : "text-white/40 hover:text-white hover:bg-white/[0.06]"

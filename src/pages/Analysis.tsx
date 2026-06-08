@@ -136,7 +136,7 @@ export default function Analysis() {
       <header className="shrink-0 z-20 border-b border-white/[0.06] bg-[#070E0D]/85 backdrop-blur-xl">
         <div className="flex items-center gap-3 px-4 sm:px-6 h-14">
           <Link to="/chat" className="inline-flex items-center gap-2 group" aria-label="Back to chat">
-            <img src="/logo.png" alt="Logo" className="w-6 h-6 object-contain" />
+            <img src="/logo.png" alt="Logo" className="w-9 h-9 object-contain" />
             <span className="text-sm font-semibold tracking-tight text-white/80 group-hover:text-white transition-colors hidden sm:inline">
               Vector Auditor
             </span>
@@ -175,7 +175,7 @@ export default function Analysis() {
       </header>
 
       <div className="flex-1 flex overflow-hidden">
-        <aside className="hidden md:flex w-[320px] shrink-0 flex-col border-r border-white/[0.06] bg-[#0a0a0c]/40">
+        <aside className="hidden md:flex w-[280px] xl:w-[320px] shrink-0 flex-col border-r border-white/[0.06] bg-[#0a0a0c]/40">
           <div className="px-4 pt-4 pb-2 shrink-0">
             <h2 className="text-sm font-semibold text-white">Documents</h2>
             <p className="text-[11px] text-white/50 mt-0.5">

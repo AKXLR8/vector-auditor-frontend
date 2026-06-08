@@ -5,7 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import {
   Sparkle, CaretRight, List, MagnifyingGlass, FileText,
   Quotes, Robot, Brain, Lightning, Globe,
-  Stack, Upload,
+  Stack, Upload, Shield,
 } from "@phosphor-icons/react";
 
 /* ─── Shared Primitives ────────────────────────────────────────────── */
@@ -33,23 +33,23 @@ const NAV_LINKS = ["Features", "How It Works", "Pricing", "Docs"];
 const FEATURES = [
   {
     icon: Brain,
-    title: "Semantic MagnifyingGlass",
-    desc: "Sentence-transformers (BAAI/bge-small-en-v1.5) embed your documents for meaning-based retrieval — not just keyword matching.",
+    title: "Semantic Search",
+    desc: "all-MiniLM-L6-v2 embeddings power meaning-based retrieval — find relevant passages even when your query uses different words than the document.",
   },
   {
     icon: Quotes,
     title: "Cited Grounding",
-    desc: "Every answer includes inline citation markers. Click any [N] chip to jump to the exact page in the source PDF.",
+    desc: "Every answer includes inline [N] citation markers. Click any chip to jump directly to the exact page in the source PDF.",
   },
   {
-    icon: Stack,
-    title: "Cross-Encoder Rerank",
-    desc: "Retrieved chunks pass through a cross-encoder reranker that re-orders by relevance before the LLM sees them.",
+    icon: Shield,
+    title: "PII Redaction",
+    desc: "Uploaded documents are automatically scanned for personally identifiable information and redacted before indexing — keeping sensitive data out of your vector store.",
   },
   {
     icon: Lightning,
     title: "Section-Aware Chunking",
-    desc: "Documents are split by markdown headers into 1000-char windows with 200-char overlap — preserving context boundaries.",
+    desc: "Documents are split by markdown headers into 1000-character windows with a 50-character overlap, preserving section boundaries and context.",
   },
   {
     icon: Globe,
@@ -59,7 +59,7 @@ const FEATURES = [
   {
     icon: Robot,
     title: "AI-Powered Answers",
-    desc: "Powered by Inception Labs' Mercury model via an OpenAI-compatible endpoint, with strict source-only grounding.",
+    desc: "Powered by Inception Labs' Mercury-2",
   },
 ];
 
@@ -140,11 +140,12 @@ export default function Landing() {
       <div className="fixed inset-0 z-0 pointer-events-none">
         <video
           autoPlay loop muted playsInline
-          className="w-full h-full object-cover pointer-events-none scale-110"
+          className="w-full h-full object-cover pointer-events-none scale-110 hidden md:block"
           style={{ filter: "blur(4px) brightness(0.35)" }}
           src="/video/upscaled-video.mp4"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-[#070E0D]/40 via-transparent to-[#070E0D]/60" />
+        <div className="absolute inset-0 md:hidden bg-[#070E0D]" />
       </div>
 
       {/* ─── Section 1 — Navbar ─────────────────────────── */}
@@ -155,7 +156,7 @@ export default function Landing() {
         className="relative z-10 w-full max-w-6xl mx-auto px-4 sm:px-6 py-5 flex items-center justify-between"
       >
         <div className="flex items-center gap-2">
-          <LogoMark className="w-7 h-7 text-white" />
+          <LogoMark className="w-10 h-10 text-white" />
           <span className="text-lg font-semibold tracking-tight hidden sm:inline">Vector Auditor</span>
         </div>
 
@@ -250,7 +251,7 @@ export default function Landing() {
         >
           <span>Your documents.</span>
           <br />
-          <span className="animate-shiny" style={gradientStyle}>
+          <span className="md:animate-shiny" style={gradientStyle}>
             Revitalized
           </span>
         </motion.h1>
@@ -657,7 +658,7 @@ export default function Landing() {
       <footer className="relative z-10 border-t border-white/10 py-8">
         <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-white/40">
           <div className="flex items-center gap-2">
-            <LogoMark className="w-5 h-5" />
+            <LogoMark className="w-8 h-8" />
             <span className="font-medium text-white/60">Vector Auditor</span>
           </div>
           <div className="flex items-center gap-4">

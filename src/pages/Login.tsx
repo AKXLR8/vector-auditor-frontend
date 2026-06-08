@@ -151,7 +151,7 @@ export default function Login() {
           className="relative z-10 w-full max-w-xs space-y-8"
         >
           <motion.div variants={item} className="flex items-center gap-2">
-            <img src="/logo.png" alt="Logo" className="w-5 h-5 object-contain" />
+            <img src="/logo.png" alt="Logo" className="w-8 h-8 object-contain" />
             <span className="text-xl font-semibold tracking-tight">Vector Auditor</span>
           </motion.div>
 
@@ -201,7 +201,7 @@ export default function Login() {
             <button
               onClick={handleGithubLogoLogin}
               disabled={oauthLoading || !oAuthConfig?.github_client_id}
-              className="flex items-center justify-center gap-2 w-full h-11 bg-black border border-white/10 rounded-xl text-sm font-medium text-white/80 hover:bg-white/5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              className="flex items-center justify-center gap-2 w-full h-12 bg-black border border-white/10 rounded-xl text-sm font-medium text-white/80 hover:bg-white/5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.98]"
             >
               {oauthLoading ? <span className="w-4 h-4 rounded-full border border-white/30 border-t-white animate-spin" /> : <GithubLogo size={16} />}
               Sign in with GitHub
@@ -236,7 +236,7 @@ export default function Login() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full h-14 bg-white text-black font-semibold rounded-xl hover:bg-white/90 active:scale-[0.98] mt-4 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full h-12 md:h-14 bg-white text-black font-semibold rounded-xl hover:bg-white/90 active:scale-[0.98] mt-4 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? "Signing in..." : "Sign In"}
             </button>

@@ -1196,7 +1196,7 @@ export default function Dashboard() {
             {session.title}
           </span>
         )}
-        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+        <div className={`flex items-center gap-0.5 shrink-0 ${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity`}>
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); togglePin(session.id); }}
@@ -1293,11 +1293,11 @@ export default function Dashboard() {
       <motion.aside
         animate={{ x: sidebarOpen ? 0 : -300 }}
         transition={{ type: "spring", damping: 28, stiffness: 260 }}
-        className="fixed top-3 bottom-3 left-3 z-30 w-[300px] flex flex-col overflow-hidden liquid-glass-sidebar will-change-[transform] safe-area-top safe-area-bottom"
+        className="fixed top-0 md:top-3 bottom-0 md:bottom-3 left-0 md:left-3 z-30 w-[85vw] md:w-[300px] flex flex-col overflow-hidden liquid-glass-sidebar will-change-[transform] safe-area-top safe-area-bottom"
       >
         {/* Logo */}
         <div className="flex items-center gap-2 px-4 pt-4 pb-1 shrink-0">
-          <img src="/logo.png" alt="Logo" className="w-6 h-6 object-contain" />
+          <img src="/logo.png" alt="Logo" className="w-9 h-9 object-contain" />
           <span className="text-sm font-semibold tracking-tight text-white/80">Vector Auditor</span>
         </div>
 
@@ -1523,10 +1523,10 @@ export default function Dashboard() {
                         draggable
                         onDragStart={(e) => sidebarHandleDragStart(e, did)}
                         title={name}
-                        className="group flex items-center gap-2 px-2.5 py-2.5 sm:py-2 rounded-xl text-sm hover:bg-white/[0.03] transition-[colors] duration-200 cursor-pointer"
+                        className="group flex items-center gap-2 px-2.5 py-3 md:py-2 rounded-xl text-sm hover:bg-white/[0.03] transition-[colors] duration-200 cursor-pointer active:bg-white/[0.05]"
                         onClick={() => toggleDoc(did)}
                       >
-                        <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors ${isSelected ? "bg-[#3B82F6] border-[#3B82F6]" : "border-white/[0.15]"}`}>
+                        <div className={`w-4 h-4 md:w-4 md:h-4 rounded border flex items-center justify-center shrink-0 transition-colors ${isSelected ? "bg-[#3B82F6] border-[#3B82F6]" : "border-white/[0.15]"}`}>
                           {isSelected && (
                             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                               <polyline points="20 6 9 17 4 12" />
@@ -1547,7 +1547,7 @@ export default function Dashboard() {
                           setConfirmDeleteId(did);
                         }}
                           disabled={deletingIds.has(did)}
-                          className="w-5 h-5 rounded hover:bg-red-500/10 flex items-center justify-center text-[#9DAFAC]/30 hover:text-red-400 transition-[colors,opacity] shrink-0 opacity-0 group-hover:opacity-100 disabled:opacity-100 disabled:cursor-not-allowed"
+                          className="w-6 h-6 rounded hover:bg-red-500/10 flex items-center justify-center text-[#9DAFAC]/50 hover:text-red-400 transition-[colors,opacity] shrink-0 opacity-60 md:opacity-0 group-hover:opacity-100 disabled:opacity-100 disabled:cursor-not-allowed"
                           title="Delete">
                           {deletingIds.has(did) ? <Spinner size={10} className="animate-spin" /> : <X size={11} />}
                         </button>
@@ -1621,10 +1621,10 @@ export default function Dashboard() {
           {!sidebarOpen && (
             <button
               onClick={() => setSidebarOpen(true)}
-              className="md:hidden fixed top-4 left-4 z-40 w-10 h-10 rounded-xl bg-white/[0.08] backdrop-blur-md border border-white/[0.1] flex items-center justify-center text-white/70 hover:text-white hover:bg-white/[0.12] transition-[colors] active:scale-95"
+              className="md:hidden fixed top-4 left-4 z-40 w-11 h-11 rounded-xl bg-white/[0.1] border border-white/[0.12] flex items-center justify-center text-white hover:bg-white/[0.18] transition-[colors] active:scale-90 shadow-lg shadow-black/30"
               aria-label="Open menu"
             >
-              <List size={18} weight="bold" />
+              <List size={20} weight="bold" />
             </button>
           )}
           <div className="flex-1 flex overflow-hidden relative">
@@ -1633,7 +1633,7 @@ export default function Dashboard() {
                 {hasRealMessages ? (
                   /* ── Chat messages view ── */
                   <>
-                    <div ref={chatContainerRef} className="flex-1 overflow-y-auto px-4 py-6 relative will-change-[scroll-position]">
+                    <div ref={chatContainerRef} className="flex-1 overflow-y-auto px-3 md:px-4 py-4 md:py-6 relative will-change-[scroll-position] [overscroll-behavior:contain]">
                       <div className="max-w-3xl mx-auto space-y-4">
                         <AnimatePresence initial={false}>
                           {messages.map((msg, idx) => (
@@ -1642,18 +1642,18 @@ export default function Dashboard() {
                               initial={false}
                               animate={{ opacity: 1, y: 0, scale: 1 }}
                               transition={{ type: "spring", damping: 24, stiffness: 320, mass: 0.5, delay: idx === messages.length - 1 && firstScrollDoneRef.current ? 0.05 : 0 }}
-                              className={`flex gap-3 items-start ${msg.role === "user" ? "flex-row-reverse" : ""}`}
+                              className={`flex gap-2 md:gap-3 items-start ${msg.role === "user" ? "flex-row-reverse" : ""}`}
                             >
-                              <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5 ${
+                              <div className={`w-7 h-7 md:w-8 md:h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5 ${
                                 msg.role === "assistant"
                                   ? "bg-white/[0.05] border border-white/[0.06] text-[#9DAFAC]"
                                   : "bg-gradient-to-br from-[#3B82F6] to-[#1E3A5F] text-white shadow-lg shadow-[#3B82F6]/20"
                               }`}>
-                                {msg.role === "assistant" ? <Robot size={16} /> : <User size={16} />}
+                                {msg.role === "assistant" ? <Robot size={14} /> : <User size={14} />}
                               </div>
-                              <div className={`flex-1 min-w-0 max-w-[85%] ${msg.role === "user" ? "text-right" : ""}`}>
+                              <div className={`flex-1 min-w-0 max-w-[85%] md:max-w-[85%] ${msg.role === "user" ? "text-right" : ""}`}>
                                 {msg.role === "user" ? (
-                                  <div className={`group relative inline-block px-4 py-3 text-sm leading-relaxed text-left rounded-[20px] backdrop-blur-sm ${
+                                  <div className={`group relative inline-block px-3.5 md:px-4 py-2.5 md:py-3 text-sm leading-relaxed text-left rounded-[20px] ${
                                     editingMessageId === msg.id
                                       ? "bg-white/[0.06] border border-[#3B82F6]/30"
                                       : "bg-white/[0.04] border border-white/[0.06]"
@@ -1698,7 +1698,7 @@ export default function Dashboard() {
                                     )}
                                   </div>
                                 ) : (
-                                  <div className="bg-white/[0.03] border border-white/[0.06] rounded-[20px] p-5 backdrop-blur-sm group/msg relative">
+                                  <div className="bg-white/[0.03] border border-white/[0.06] rounded-[20px] p-3.5 md:p-5 group/msg relative">
                                     <div className="text-sm leading-relaxed citation-area" data-msg-id={msg.id}>
                                       {msg.content ? (
                                         <DiffusingMarkdown content={msg.content} streaming={loading && msg.role === "assistant" && idx === messages.length - 1} />
@@ -1792,7 +1792,7 @@ export default function Dashboard() {
                   </>
                 ) : (
                   /* ── Copilot-style Hero View ── */
-                  <div className="flex-1 flex flex-col items-center justify-center overflow-y-auto px-4 py-8">
+                    <div className="flex-1 flex flex-col items-center justify-center overflow-y-auto px-4 py-6 md:py-8">
                     <div className="flex-1 flex flex-col items-center justify-center max-w-2xl w-full">
 
                       {/* Greeting */}
@@ -1850,7 +1850,7 @@ export default function Dashboard() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: 0.1 }}
                   onSubmit={handlePaperPlaneRight}
-                  className="shrink-0 relative z-10 px-4 pb-4 pt-3 safe-area-bottom"
+                  className="shrink-0 relative z-10 px-3 md:px-4 pb-3 md:pb-4 pt-2 md:pt-3 safe-area-bottom"
                 >
                   <div className="max-w-3xl mx-auto">
                     <AutoGrowTextarea

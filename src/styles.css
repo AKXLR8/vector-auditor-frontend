@@ -546,11 +546,20 @@ input:focus-visible, textarea:focus-visible, select:focus-visible {
   box-shadow: 0 8px 24px rgba(255, 255, 255, 0.15);
 }
 
+/* ── Mobile-first enhancements ────────────────── */
 @media (max-width: 768px) {
   .c3-watermark-line-2 { background: none; -webkit-text-fill-color: #3B82F6; color: #3B82F6; }
 
   /* Improve touch targets on mobile */
   button, a, [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Only apply to interactive, not decorative buttons */
+  button:not([class*="w-5"]):not([class*="w-4"]):not([class*="w-3"]),
+  a:not([class*="w-5"]):not([class*="w-4"]):not([class*="w-3"]),
+  [role="button"]:not([class*="w-5"]):not([class*="w-4"]):not([class*="w-3"]) {
     min-height: 44px;
     min-width: 44px;
   }
@@ -575,5 +584,61 @@ input:focus-visible, textarea:focus-visible, select:focus-visible {
   /* Improve input focus on mobile */
   input, textarea, select {
     font-size: 16px !important;
+  }
+
+  /* Disable heavy backdrop-filter on mobile for performance */
+  .liquid-glass-sidebar,
+  .liquid-glass-input,
+  .liquid-glass,
+  .glass-panel,
+  .glass-sidebar,
+  .glass-input,
+  .glass-header,
+  .c3-card {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  /* Simplify liquid glass backgrounds on mobile */
+  .liquid-glass-sidebar {
+    background: rgba(8, 10, 14, 0.92) !important;
+    border-radius: 0 !important;
+    border-left: none;
+    border-top: none;
+    border-bottom: none;
+  }
+
+  .liquid-glass-sidebar::before,
+  .liquid-glass-sidebar::after {
+    display: none !important;
+  }
+
+  .liquid-glass-input {
+    background: rgba(8, 10, 14, 0.85) !important;
+    border-radius: 20px !important;
+  }
+
+  .liquid-glass-input::before {
+    display: none !important;
+  }
+
+  /* Prevent pull-to-refresh on chat panels */
+  .msgs-container,
+  main > div {
+    overscroll-behavior: contain;
+  }
+
+  /* Better touch scrolling */
+  * {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Reduce motion for prefers-reduced-motion */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }
