@@ -1618,7 +1618,7 @@ export default function Dashboard() {
       </motion.aside>
 
       {/* ── Main Content ── */}
-      <main className="flex-1 flex flex-col min-w-0 relative contain-[layout]">
+      <main className="flex-1 flex flex-col min-w-0 relative">
         {/* Video Background (hero only, lazy-mounted after idle) */}
         {showVideoBg && (
           <HeroVideo />

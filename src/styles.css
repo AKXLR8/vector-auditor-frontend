@@ -629,9 +629,9 @@ input:focus-visible, textarea:focus-visible, select:focus-visible {
     display: none !important;
   }
 
-  /* Reduce input area padding on mobile */
+  /* Ensure input area has enough bottom breathing room on mobile */
   .safe-area-bottom {
-    padding-bottom: max(env(safe-area-inset-bottom), 8px) !important;
+    padding-bottom: max(env(safe-area-inset-bottom), 20px) !important;
   }
 
   /* Better form spacing on mobile */
