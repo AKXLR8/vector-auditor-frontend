@@ -1673,7 +1673,7 @@ export default function Dashboard() {
                 {hasRealMessages ? (
                   /* ── Chat messages view ── */
                   <>
-                    <div ref={chatContainerRef} className="flex-1 overflow-y-auto px-2 md:px-4 py-2 md:py-6 relative will-change-[scroll-position] [overscroll-behavior:contain]">
+                    <div ref={chatContainerRef} className="flex-1 min-h-0 overflow-y-auto px-2 md:px-4 py-2 md:py-6 relative will-change-[scroll-position] [overscroll-behavior:contain]">
                       <div className="max-w-3xl mx-auto flex flex-col gap-2.5 md:gap-4">
                         <AnimatePresence initial={false}>
                           {messages.map((msg, idx) => (
@@ -1890,7 +1890,7 @@ export default function Dashboard() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: 0.1 }}
                   onSubmit={handlePaperPlaneRight}
-                  className="shrink-0 relative z-10 px-2 md:px-4 pb-2 md:pb-4 pt-1.5 md:pt-3 safe-area-bottom"
+                  className="shrink-0 relative z-10 px-2 md:px-4 max-md:pb-4 md:pb-4 pt-1.5 md:pt-3 safe-area-bottom"
                 >
                   <div className="max-w-3xl mx-auto">
                     <AutoGrowTextarea
