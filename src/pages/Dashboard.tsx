@@ -315,7 +315,15 @@ export default function Dashboard() {
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const navigate = useNavigate();
 
-  const isMobile = typeof window !== "undefined" && window.matchMedia("(max-width: 768px)").matches;
+  const [isMobile, setIsMobile] = useState(
+    () => typeof window !== "undefined" && window.matchMedia("(max-width: 768px)").matches
+  );
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 768px)");
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
   const [showHamburger, setShowHamburger] = useState(
     () => typeof window !== "undefined" ? window.innerWidth < 768 : true
   );
@@ -329,11 +337,12 @@ export default function Dashboard() {
       setShowHamburger(true);
     }
   }, [sidebarOpen, isMobile]);
+  const hasOverlay = activePanel !== null || activePdf !== null;
   useSwipeGesture({
     onSwipeRight: () => { if (isMobile) setSidebarOpen(true); },
     onSwipeLeft: () => { if (isMobile && sidebarOpen) setSidebarOpen(false); },
     threshold: 60,
-    enabled: isMobile,
+    enabled: isMobile && !hasOverlay,
   });
 
   const mapServerMessages = (raw: any[]): Message[] =>
@@ -521,14 +530,15 @@ export default function Dashboard() {
   }, [uid, refetch]);
 
   useEffect(() => {
-    if (activePdf && sidebarOpen) {
+    const open = activePanel !== null || activePdf !== null;
+    if (open && sidebarOpen) {
       sidebarForcedClosedRef.current = true;
       setSidebarOpen(false);
-    } else if (!activePdf && sidebarForcedClosedRef.current) {
+    } else if (!open && sidebarForcedClosedRef.current) {
       sidebarForcedClosedRef.current = false;
       setSidebarOpen(true);
     }
-  }, [activePdf]);
+  }, [activePanel, activePdf]);
 
   const firstScrollDoneRef = useRef(false);
   useEffect(() => {
@@ -1647,7 +1657,11 @@ export default function Dashboard() {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.15 }}
               onClick={() => setSidebarOpen(true)}
-              className="md:hidden fixed top-4 left-4 z-40 w-11 h-11 rounded-xl bg-white/[0.1] border border-white/[0.12] flex items-center justify-center text-white hover:bg-white/[0.18] transition-[colors] active:scale-90 shadow-lg shadow-black/30"
+              style={{
+                top: "max(16px, env(safe-area-inset-top, 16px))",
+                left: "max(16px, env(safe-area-inset-left, 16px))",
+              }}
+              className="md:hidden fixed z-40 w-11 h-11 rounded-xl bg-white/[0.1] border border-white/[0.12] flex items-center justify-center text-white hover:bg-white/[0.18] transition-[colors] active:scale-90 shadow-lg shadow-black/30"
               aria-label="Open menu"
             >
               <List size={20} weight="bold" />

@@ -550,13 +550,11 @@ input:focus-visible, textarea:focus-visible, select:focus-visible {
 @media (max-width: 768px) {
   .c3-watermark-line-2 { background: none; -webkit-text-fill-color: #3B82F6; color: #3B82F6; }
 
-  /* Improve touch targets on mobile */
-  button, a, [role="button"] {
-    min-height: 44px;
-    min-width: 44px;
-  }
-
-  /* Only apply to interactive, not decorative buttons */
+  /* Touch targets: all interactive elements get 44px minimum,
+     except explicitly small/decorative buttons (w-5=20px, w-4=16px, w-3=12px)
+     and citation chips (.cit-chip-btn) which are inline within flowing text
+     Note: w-9=36px, w-8=32px, w-7=28px, w-6=24px are NOT excluded —
+     they still get bumped to 44px for reliable touch */
   button:not([class*="w-5"]):not([class*="w-4"]):not([class*="w-3"]):not(.cit-chip-btn),
   a:not([class*="w-5"]):not([class*="w-4"]):not([class*="w-3"]),
   [role="button"]:not([class*="w-5"]):not([class*="w-4"]):not([class*="w-3"]) {
@@ -594,7 +592,11 @@ input:focus-visible, textarea:focus-visible, select:focus-visible {
   .glass-sidebar,
   .glass-input,
   .glass-header,
-  .c3-card {
+  .c3-card,
+  .backdrop-blur-xl,
+  .backdrop-blur-lg,
+  .backdrop-blur-md,
+  .backdrop-blur-sm {
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
   }
@@ -647,6 +649,16 @@ input:focus-visible, textarea:focus-visible, select:focus-visible {
   /* Better touch scrolling */
   * {
     -webkit-overflow-scrolling: touch;
+  }
+
+  /* Simplify diffuse-in animation on mobile — remove expensive blur filter */
+  @keyframes diffuse {
+    0% { opacity: 0; }
+    100% { opacity: 1; }
+  }
+  .diffuse-in {
+    animation: diffuse 0.3s ease forwards;
+    will-change: opacity;
   }
 
   /* Reduce motion for prefers-reduced-motion */
