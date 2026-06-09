@@ -1,9 +1,8 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { Brain, Lightning, CaretDown, Check, Minus, Plus } from "@phosphor-icons/react";
 import type { QueryMode } from "../types";
-import { useClickOutside } from "../hooks/useClickOutside";
 
 interface ModeOption {
   value: QueryMode;
@@ -46,7 +45,22 @@ export function QueryControls({ mode, onModeChange, maxCitations, onMaxCitations
   const [pos, setPos] = useState<PopoverPos | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
-  useClickOutside(popoverRef, () => setOpen(false), open);
+
+  const closeIfOutside = useCallback((e: MouseEvent | TouchEvent) => {
+    if (!popoverRef.current || popoverRef.current.contains(e.target as Node)) return;
+    if (triggerRef.current && triggerRef.current.contains(e.target as Node)) return;
+    setOpen(false);
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    document.addEventListener("mousedown", closeIfOutside);
+    document.addEventListener("touchstart", closeIfOutside);
+    return () => {
+      document.removeEventListener("mousedown", closeIfOutside);
+      document.removeEventListener("touchstart", closeIfOutside);
+    };
+  }, [open, closeIfOutside]);
 
   const current = MODE_OPTIONS.find((o) => o.value === mode) ?? MODE_OPTIONS[0];
   const CurrentIcon = current.icon;

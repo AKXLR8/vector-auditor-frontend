@@ -295,7 +295,7 @@ export default function Dashboard() {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [queryMode, setQueryMode] = useLocalStorage<QueryMode>("query_mode", "white_box");
-  const [maxCitations, setMaxCitations] = useLocalStorage<number>("query_max_citations", 20);
+  const [maxCitations, setMaxCitations] = useLocalStorage<number>("query_max_citations", 5);
 
   const messagesEnd = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -1909,7 +1909,7 @@ export default function Dashboard() {
                           aria-label="Attach files"
                           className="w-9 h-9 md:w-8 md:h-8 rounded-lg hover:bg-white/[0.06] flex items-center justify-center text-white/40 hover:text-white/80 transition-[colors] disabled:opacity-30"
                         >
-                          <PaperPlaneRight size={16} className="rotate-45" weight="bold" />
+                          <Plus size={20} weight="bold" />
                         </motion.button>
                       }
                       footerSlot={
