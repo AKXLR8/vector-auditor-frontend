@@ -275,7 +275,9 @@ export default function Dashboard() {
   const [docGroups, setDocGroups] = useState<DocGroup[]>(loadGroups);
   const [selectedGroups, setSelectedGroups] = useState<Set<string>>(new Set());
   const [sidebarDragOverGroup, setSidebarDragOverGroup] = useState<string | null>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(
+    () => typeof window !== "undefined" && window.innerWidth >= 768
+  );
   const sidebarForcedClosedRef = useRef(false);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<Record<string, { stage: string; progress: number; error?: string }>>({});
@@ -314,7 +316,9 @@ export default function Dashboard() {
   const navigate = useNavigate();
 
   const isMobile = typeof window !== "undefined" && window.matchMedia("(max-width: 768px)").matches;
-  const [showHamburger, setShowHamburger] = useState(!isMobile || !sidebarOpen);
+  const [showHamburger, setShowHamburger] = useState(
+    () => typeof window !== "undefined" ? window.innerWidth < 768 : true
+  );
   useEffect(() => {
     if (sidebarOpen) {
       setShowHamburger(false);
@@ -461,8 +465,6 @@ export default function Dashboard() {
   useEffect(() => { saveGroups(docGroups); }, [docGroups]);
 
   useEffect(() => {
-    const mq = window.matchMedia("(max-width: 768px)");
-    setSidebarOpen(!mq.matches);
     if (!uid) return;
     const myToken = ++userLoadTokenRef.current;
     const localSessions = loadSessions(uid);
@@ -1816,8 +1818,8 @@ export default function Dashboard() {
                   </>
                 ) : (
                   /* ── Copilot-style Hero View ── */
-                    <div className="flex-1 flex flex-col items-center justify-center overflow-y-auto px-5 py-10 md:py-8">
-                    <div className="flex flex-col items-center justify-center max-w-2xl w-full mt-[-5vh] md:mt-0">
+                    <div className="flex-1 flex flex-col items-center justify-center overflow-y-auto px-5 py-6 md:py-8 min-h-0">
+                    <div className="flex flex-col items-center justify-center max-w-2xl w-full md:mt-[-5vh]">
 
                       {/* Greeting */}
                       <motion.h1

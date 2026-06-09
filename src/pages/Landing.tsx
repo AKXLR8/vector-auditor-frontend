@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import {
@@ -137,7 +137,7 @@ export default function Landing() {
       </svg>
 
       {/* ─── Background Video ───────────────────────────── */}
-      <div className="fixed inset-0 z-0 pointer-events-none">
+      <div className="fixed inset-0 z-0 pointer-events-none safe-area-top safe-area-bottom">
         <video
           autoPlay loop muted playsInline
           className="w-full h-full object-cover pointer-events-none scale-110"
@@ -214,13 +214,20 @@ export default function Landing() {
       </motion.nav>
 
       {/* ─── Mobile Nav ──────────────────────────────────── */}
-      {mobileNavOpen && (
-        <div className="md:hidden relative z-10 w-full px-4 pb-4">
-          <div className="max-w-6xl mx-auto rounded-2xl bg-black/60 backdrop-blur-xl border border-white/10 p-4 space-y-3">
+      <AnimatePresence>
+        {mobileNavOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -8, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -8, scale: 0.97 }}
+            transition={{ duration: 0.15, ease: "easeOut" }}
+            className="md:hidden relative z-10 w-full px-4 pb-4 safe-area-bottom"
+          >
+            <div className="max-w-6xl mx-auto rounded-2xl bg-black/60 backdrop-blur-xl border border-white/10 p-4 space-y-3">
             {NAV_LINKS.map((link) => (
               <a key={link} href={`#${link.toLowerCase().replace(/\s+/g, "-")}`}
                 onClick={(e) => { setMobileNavOpen(false); handleNavClick(e, `#${link.toLowerCase().replace(/\s+/g, "-")}`); }}
-                className="block text-sm text-white/70 hover:text-white py-1">{link}</a>
+                className="block text-sm text-white/70 hover:text-white py-2.5">{link}</a>
             ))}
             <hr className="border-white/10" />
             {user ? (
@@ -237,8 +244,9 @@ export default function Landing() {
               </div>
             )}
           </div>
-        </div>
+        </motion.div>
       )}
+      </AnimatePresence>
 
       {/* ─── Section 2 — Hero ─────────────────────────────── */}
       <section className="relative z-10 w-full pt-16 md:pt-28 pb-20 text-center flex flex-col items-center px-4 sm:px-6">
@@ -374,11 +382,11 @@ export default function Landing() {
                             </div>
                             <div className="whitespace-pre-line">{msg.text}</div>
                           </div>
-                          <div className="flex items-center gap-2 text-xs">
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#00d2ff]" />
-                            <span className="text-white/40">Sources:</span>
-                            <button className="px-2 py-0.5 rounded bg-white/5 text-[#00d2ff] hover:bg-white/10 transition-colors">Q3_Security_Audit.pdf — p.12</button>
-                            <button className="px-2 py-0.5 rounded bg-white/5 text-[#00d2ff] hover:bg-white/10 transition-colors">Incident_Postmortem.pdf — p.4</button>
+                          <div className="flex items-center gap-2 text-xs flex-wrap">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#00d2ff] shrink-0" />
+                            <span className="text-white/40 shrink-0">Sources:</span>
+                            <button className="px-2 py-0.5 rounded bg-white/5 text-[#00d2ff] hover:bg-white/10 transition-colors whitespace-nowrap">Q3_Security_Audit.pdf — p.12</button>
+                            <button className="px-2 py-0.5 rounded bg-white/5 text-[#00d2ff] hover:bg-white/10 transition-colors whitespace-nowrap">Incident_Postmortem.pdf — p.4</button>
                           </div>
                         </div>
                       )}
@@ -437,7 +445,7 @@ export default function Landing() {
                 <f.icon size={18} className="text-[#00d2ff]" />
               </div>
               <h3 className="text-sm font-semibold mb-2">{f.title}</h3>
-              <p className="text-xs text-white/50 leading-[1.6]">{f.desc}</p>
+              <p className="text-xs sm:text-sm text-white/60 leading-[1.6]">{f.desc}</p>
             </motion.div>
           ))}
         </div>
@@ -654,17 +662,17 @@ export default function Landing() {
       </section>
 
       {/* ─── Footer ────────────────────────────────────────── */}
-      <footer className="relative z-10 border-t border-white/10 py-8">
+      <footer className="relative z-10 border-t border-white/10 py-8 safe-area-bottom">
         <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-white/40">
           <div className="flex items-center gap-2">
             <LogoMark className="w-10 h-10" />
             <span className="font-medium text-white/60">Vector Auditor</span>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center justify-center gap-4 flex-wrap text-center">
             <span>Document Q&A</span>
-            <span>·</span>
+            <span aria-hidden="true" className="hidden sm:inline">·</span>
             <span>Cited answers</span>
-            <span>·</span>
+            <span aria-hidden="true" className="hidden sm:inline">·</span>
             <span>Page-level precision</span>
           </div>
           <p>&copy; {new Date().getFullYear()} Vector Auditor</p>

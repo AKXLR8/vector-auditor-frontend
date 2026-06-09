@@ -557,7 +557,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible {
   }
 
   /* Only apply to interactive, not decorative buttons */
-  button:not([class*="w-5"]):not([class*="w-4"]):not([class*="w-3"]),
+  button:not([class*="w-5"]):not([class*="w-4"]):not([class*="w-3"]):not(.cit-chip-btn),
   a:not([class*="w-5"]):not([class*="w-4"]):not([class*="w-3"]),
   [role="button"]:not([class*="w-5"]):not([class*="w-4"]):not([class*="w-3"]) {
     min-height: 44px;
