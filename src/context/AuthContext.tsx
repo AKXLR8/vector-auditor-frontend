@@ -17,10 +17,22 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-function parseToken(token: string): { sub: string; roles: string[]; exp: number; display_name?: string | null } | null {
+function parseToken(token: string): {
+  sub: string;
+  roles: string[];
+  exp: number;
+  display_name?: string | null;
+  preferred_username?: string | null;
+} | null {
   try {
     const payload = JSON.parse(atob(token.split(".")[1]));
-    return { sub: payload.sub, roles: payload.roles || [], exp: payload.exp, display_name: payload.display_name || null };
+    return {
+      sub: payload.sub,
+      roles: payload.roles || [],
+      exp: payload.exp,
+      display_name: payload.display_name || payload.name || null,
+      preferred_username: payload.preferred_username || null,
+    };
   } catch {
     return null;
   }
@@ -93,7 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser({
           id: parsed.sub,
           email: parsed.sub,
-          display_name: parsed.display_name || null,
+          display_name: parsed.display_name || parsed.preferred_username || null,
           roles: parsed.roles,
           mfa_enabled: false,
           created_at: new Date().toISOString(),

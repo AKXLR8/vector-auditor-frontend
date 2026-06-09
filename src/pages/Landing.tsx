@@ -178,7 +178,7 @@ export default function Landing() {
         <div className="hidden md:flex items-center gap-3">
           {user ? (
             <>
-              <span className="text-sm text-white/50">{user.email}</span>
+              <span className="text-sm text-white/50">{user?.display_name || "User"}</span>
               <Link
                 to="/chat"
                 className="inline-flex items-center justify-center gap-2 rounded-full bg-white text-black font-medium text-sm px-5 py-3 transition-all hover:bg-white/90 active:scale-[0.98]"
@@ -232,7 +232,7 @@ export default function Landing() {
             <hr className="border-white/10" />
             {user ? (
               <div className="space-y-2 pt-2">
-                <span className="block text-xs text-white/50">{user.email}</span>
+                <span className="block text-xs text-white/50">{user?.display_name || "User"}</span>
                 <Link to="/chat" className="block text-sm text-white font-medium">Dashboard</Link>
                 <button onClick={() => { localStorage.removeItem("chat_messages"); logout(); }}
                   className="text-sm text-white/50 hover:text-white cursor-pointer">Logout</button>

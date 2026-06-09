@@ -129,7 +129,7 @@ export default function Analysis() {
     }
   };
 
-  const accountName = user?.display_name || user?.email?.split("@")[0] || "User";
+  const accountName = user?.display_name || "User";
 
   return (
     <div className="h-screen flex flex-col bg-[#070E0D] text-[#F2F2F2] overflow-hidden">

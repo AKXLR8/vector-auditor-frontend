@@ -389,8 +389,8 @@ export default function Dashboard() {
   const urlSessionId = searchParams.get("c");
 
   const tokensUsed = totalTokens(messages);
-  const accountName = user?.display_name || user?.email?.split("@")[0] || "User";
-  const subtitle = user?.display_name || user?.email?.split("@")[0] || "—";
+  const accountName = user?.display_name || "User";
+  const subtitle = user?.display_name || "Account";
   const hasRealMessages = messages.some((m) => m.role === "user");
   const showVideoBg = !hasRealMessages;
 
