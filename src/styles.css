@@ -562,8 +562,13 @@ input:focus-visible, textarea:focus-visible, select:focus-visible {
     min-width: 44px;
   }
 
-  /* Disable hover effects on touch devices */
-  *:hover {
+  /* Disable hover scale-up effects on touch devices (prevents sticky hover)
+     Note: does NOT use *:hover { transform:none } because that would override
+     framer-motion's inline transform (sidebar slide-out, etc.) */
+  .hover-lift:hover,
+  .c3-btn:hover,
+  button:active,
+  a:active {
     transform: none !important;
   }
 

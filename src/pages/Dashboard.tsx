@@ -1193,7 +1193,7 @@ export default function Dashboard() {
     return (
       <div
         key={session.id}
-        onClick={() => { if (!isEditing) { switchToSession(session); setSidebarOpen(false); } }}
+        onClick={() => { if (!isEditing) { switchToSession(session); if (isMobile) setSidebarOpen(false); } }}
         className={`group relative flex items-center gap-1.5 px-2.5 py-2.5 sm:py-2 rounded-xl cursor-pointer transition-[colors,opacity] duration-200 ml-1 ${
           isActive
             ? "bg-white/[0.07] border border-white/[0.1]"
@@ -1370,7 +1370,7 @@ export default function Dashboard() {
 
         {/* Menu items */}
         <div className="px-3 space-y-1 shrink-0">
-          <button onClick={() => { newChat(); setSidebarOpen(false); }}
+          <button onClick={() => { newChat(); if (isMobile) setSidebarOpen(false); }}
             className="w-full flex items-center justify-center gap-2 h-10 rounded-xl text-sm font-semibold text-white transition-[colors,transform] duration-300 active:scale-[0.97]"
             style={{ background: "linear-gradient(135deg, #3B82F6, #1E3A5F)" }}
           >
@@ -1379,7 +1379,7 @@ export default function Dashboard() {
           </button>
           <Link
             to="/analysis"
-            onClick={() => { setSidebarOpen(false); }}
+            onClick={() => { if (isMobile) setSidebarOpen(false); }}
             className="w-full flex items-center gap-2 h-9 px-3 rounded-xl text-xs font-medium text-white/70 hover:text-white hover:bg-white/[0.05] transition-[colors] duration-200"
           >
             <Sparkle size={13} weight="bold" className="text-[#60A5FA]" />
@@ -1604,11 +1604,11 @@ export default function Dashboard() {
           {isAdmin && (
             <Link to="/admin" className="flex items-center gap-2 px-3 py-1.5 text-xs text-[#3B82F6]/70 hover:bg-white/[0.03] transition-colors">Admin Panel</Link>
           )}
-          <Link to="/" onClick={() => { setSidebarOpen(false); }} className="w-full flex items-center justify-center gap-2 py-2 text-xs text-[#9DAFAC]/50 hover:text-[#3B82F6] hover:bg-[#3B82F6]/5 transition-[colors] duration-300">
+          <Link to="/" onClick={() => { if (isMobile) setSidebarOpen(false); }} className="w-full flex items-center justify-center gap-2 py-2 text-xs text-[#9DAFAC]/50 hover:text-[#3B82F6] hover:bg-[#3B82F6]/5 transition-[colors] duration-300">
             <House size={13} />
             Home
           </Link>
-          <button onClick={() => { logoutAndReset(); setSidebarOpen(false); }}
+          <button onClick={() => { logoutAndReset(); if (isMobile) setSidebarOpen(false); }}
             className="w-full flex items-center justify-center gap-2 py-2 text-xs text-[#9DAFAC]/50 hover:text-red-400 hover:bg-red-500/5 transition-[colors] duration-300"
           >
             <SignOut size={13} />
