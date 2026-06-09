@@ -314,6 +314,17 @@ export default function Dashboard() {
   const navigate = useNavigate();
 
   const isMobile = typeof window !== "undefined" && window.matchMedia("(max-width: 768px)").matches;
+  const [showHamburger, setShowHamburger] = useState(!isMobile || !sidebarOpen);
+  useEffect(() => {
+    if (sidebarOpen) {
+      setShowHamburger(false);
+    } else if (isMobile) {
+      const t = setTimeout(() => setShowHamburger(true), 350);
+      return () => clearTimeout(t);
+    } else {
+      setShowHamburger(true);
+    }
+  }, [sidebarOpen, isMobile]);
   useSwipeGesture({
     onSwipeRight: () => { if (isMobile) setSidebarOpen(true); },
     onSwipeLeft: () => { if (isMobile && sidebarOpen) setSidebarOpen(false); },
@@ -1170,7 +1181,7 @@ export default function Dashboard() {
     return (
       <div
         key={session.id}
-        onClick={() => { if (!isEditing) switchToSession(session); }}
+        onClick={() => { if (!isEditing) { switchToSession(session); if (isMobile) setSidebarOpen(false); } }}
         className={`group relative flex items-center gap-1.5 px-2.5 py-2.5 sm:py-2 rounded-xl cursor-pointer transition-[colors,opacity] duration-200 ml-1 ${
           isActive
             ? "bg-white/[0.07] border border-white/[0.1]"
@@ -1291,13 +1302,13 @@ export default function Dashboard() {
 
       {/* ── Unified Sidebar (Chats + Documents) ── */}
       <motion.aside
-        animate={{ x: sidebarOpen ? 0 : -300 }}
+        animate={{ x: sidebarOpen ? 0 : (isMobile ? "-100vw" : -300) }}
         transition={{ type: "spring", damping: 28, stiffness: 260 }}
         className="fixed top-0 md:top-3 bottom-0 md:bottom-3 left-0 md:left-3 z-30 w-screen md:w-[300px] flex flex-col overflow-hidden liquid-glass-sidebar will-change-[transform] safe-area-top safe-area-bottom"
       >
         {/* Logo + mobile close */}
         <div className="flex items-center gap-2 px-4 pt-5 md:pt-4 pb-1 shrink-0">
-          <img src="/logo.png" alt="Logo" className="w-10 h-10 object-contain" />
+          <img src="/logo.png" alt="Logo" className="w-12 h-12 md:w-10 md:h-10 object-contain" />
           <span className="text-sm font-semibold tracking-tight text-white/80">Vector Auditor</span>
           <div className="flex-1" />
           <button
@@ -1347,7 +1358,7 @@ export default function Dashboard() {
 
         {/* Menu items */}
         <div className="px-3 space-y-1 shrink-0">
-          <button onClick={newChat}
+          <button onClick={() => { newChat(); if (isMobile) setSidebarOpen(false); }}
             className="w-full flex items-center justify-center gap-2 h-10 rounded-xl text-sm font-semibold text-white transition-[colors,transform] duration-300 active:scale-[0.97]"
             style={{ background: "linear-gradient(135deg, #3B82F6, #1E3A5F)" }}
           >
@@ -1356,6 +1367,7 @@ export default function Dashboard() {
           </button>
           <Link
             to="/analysis"
+            onClick={() => { if (isMobile) setSidebarOpen(false); }}
             className="w-full flex items-center gap-2 h-9 px-3 rounded-xl text-xs font-medium text-white/70 hover:text-white hover:bg-white/[0.05] transition-[colors] duration-200"
           >
             <Sparkle size={13} weight="bold" className="text-[#60A5FA]" />
@@ -1580,11 +1592,11 @@ export default function Dashboard() {
           {isAdmin && (
             <Link to="/admin" className="flex items-center gap-2 px-3 py-1.5 text-xs text-[#3B82F6]/70 hover:bg-white/[0.03] transition-colors">Admin Panel</Link>
           )}
-          <Link to="/" className="w-full flex items-center justify-center gap-2 py-2 text-xs text-[#9DAFAC]/50 hover:text-[#3B82F6] hover:bg-[#3B82F6]/5 transition-[colors] duration-300">
+          <Link to="/" onClick={() => { if (isMobile) setSidebarOpen(false); }} className="w-full flex items-center justify-center gap-2 py-2 text-xs text-[#9DAFAC]/50 hover:text-[#3B82F6] hover:bg-[#3B82F6]/5 transition-[colors] duration-300">
             <House size={13} />
             Home
           </Link>
-          <button onClick={logoutAndReset}
+          <button onClick={() => { logoutAndReset(); if (isMobile) setSidebarOpen(false); }}
             className="w-full flex items-center justify-center gap-2 py-2 text-xs text-[#9DAFAC]/50 hover:text-red-400 hover:bg-red-500/5 transition-[colors] duration-300"
           >
             <SignOut size={13} />
@@ -1627,14 +1639,17 @@ export default function Dashboard() {
         {/* ── Content Area ── */}
         <FileDropZone onFiles={onDropFiles} disabled={loading} className="flex-1 flex overflow-hidden relative">
           {/* Mobile sidebar toggle */}
-          {!sidebarOpen && (
-            <button
+          {showHamburger && (
+            <motion.button
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.15 }}
               onClick={() => setSidebarOpen(true)}
               className="md:hidden fixed top-4 left-4 z-40 w-11 h-11 rounded-xl bg-white/[0.1] border border-white/[0.12] flex items-center justify-center text-white hover:bg-white/[0.18] transition-[colors] active:scale-90 shadow-lg shadow-black/30"
               aria-label="Open menu"
             >
               <List size={20} weight="bold" />
-            </button>
+            </motion.button>
           )}
           <div className="flex-1 flex overflow-hidden relative">
             <div className="flex-1 flex flex-col min-w-0 relative z-10">
