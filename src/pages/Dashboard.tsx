@@ -23,6 +23,7 @@ import { useSwipeGesture } from "../hooks/useSwipeGesture";
 import { useDocumentSync, type DocDiff } from "../hooks/useDocumentSync";
 import { useKeyboardShortcuts } from "../hooks/useKeyboardShortcuts";
 import { useLocalStorage } from "../hooks/useLocalStorage";
+import { getMessages as getCachedMessages, setMessages as setCachedMessages, removeMessages as removeCachedMessages, clearAllMessages } from "../lib/messageCache";
 import { errorMessage } from "../lib/errors";
 import { sendQuery, streamQuery, submitFeedback, StreamAbortError } from "../api/query";
 import { uploadDocuments, getDocument, deleteDocument } from "../api/documents";
@@ -368,6 +369,7 @@ export default function Dashboard() {
           if (serverMsgs.length > 0) {
             const mapped = mapServerMessages(serverMsgs);
             setMessages(mapped);
+            setCachedMessages(sessionId, mapped);
             setSessions((prev) => {
               const upd = prev.map((s) =>
                 s.id === sessionId ? { ...s, messages: mapped } : s
@@ -476,7 +478,30 @@ export default function Dashboard() {
   useEffect(() => {
     if (!uid) return;
     const myToken = ++userLoadTokenRef.current;
+
+    /* Load sessions from localStorage immediately */
     const localSessions = loadSessions(uid);
+    setSessions(localSessions);
+
+    /* If URL points to a session, load cached messages instantly */
+    if (urlSessionId && localSessions.some((s) => s.id === urlSessionId)) {
+      setActiveSessionId(urlSessionId);
+      const cached = localSessions.find((x) => x.id === urlSessionId)!;
+      setMessages(cached.messages.length > 0 ? cached.messages : [freshWelcome()]);
+      /* Try IndexedDB cache first */
+      getCachedMessages(urlSessionId).then((cachedMsgs) => {
+        if (myToken !== userLoadTokenRef.current) return;
+        if (cachedMsgs && cachedMsgs.length > 0) {
+          setMessages(cachedMsgs);
+        }
+      });
+    } else {
+      setActiveSessionId(null);
+      setMessages([freshWelcome()]);
+      saveActiveId(uid, null);
+    }
+
+    /* Fetch fresh sessions from API in background */
     apiListSessions().then((serverSessions) => {
       if (myToken !== userLoadTokenRef.current) return;
       const merged: LocalSession[] = [];
@@ -499,27 +524,10 @@ export default function Dashboard() {
       setSessions(merged);
       saveSessions(uid, merged);
       if (urlSessionId && merged.some((s) => s.id === urlSessionId)) {
-        const s = merged.find((x) => x.id === urlSessionId)!;
-        setActiveSessionId(s.id);
-        setMessages(s.messages.length > 0 ? s.messages : [freshWelcome()]);
-        fetchAndApplySessionMessages(s.id, myToken, userLoadTokenRef);
-      } else {
-        setActiveSessionId(null);
-        setMessages([freshWelcome()]);
-        saveActiveId(uid, null);
+        fetchAndApplySessionMessages(urlSessionId, myToken, userLoadTokenRef);
       }
     }).catch(() => {
-      if (myToken !== userLoadTokenRef.current) return;
-      setSessions(localSessions);
-      if (urlSessionId && localSessions.some((s) => s.id === urlSessionId)) {
-        const s = localSessions.find((x) => x.id === urlSessionId)!;
-        setActiveSessionId(s.id);
-        setMessages(s.messages.length > 0 ? s.messages : [freshWelcome()]);
-      } else {
-        setActiveSessionId(null);
-        setMessages([freshWelcome()]);
-        saveActiveId(uid, null);
-      }
+      /* localStorage fallback already rendered */
     });
   }, [user?.id, fetchAndApplySessionMessages]);
 
@@ -580,6 +588,7 @@ export default function Dashboard() {
     autoSaveTimerRef.current = setTimeout(() => {
       autoSaveTimerRef.current = null;
       const title = deriveTitle(messages);
+      setCachedMessages(activeSessionId, messages);
       setSessions((prev) => {
         const updated = prev.map((s) =>
           s.id === activeSessionId ? { ...s, messages: [...messages], title } : s
@@ -750,6 +759,12 @@ export default function Dashboard() {
     setActiveSessionId(session.id);
     saveActiveId(uid, session.id);
     setMessages(session.messages.length > 0 ? session.messages : [freshWelcome()]);
+    getCachedMessages(session.id).then((cachedMsgs) => {
+      if (myToken !== sessionFetchTokenRef.current) return;
+      if (cachedMsgs && cachedMsgs.length > 0) {
+        setMessages(cachedMsgs);
+      }
+    });
     fetchAndApplySessionMessages(session.id, myToken, sessionFetchTokenRef);
   };
 
@@ -814,6 +829,7 @@ export default function Dashboard() {
       setMessages([freshWelcome()]);
     }
     try { localStorage.removeItem(`synced_msgs_${id}`); } catch { /* ignore */ }
+    removeCachedMessages(id);
     syncedCache.delete(id);
     apiDeleteSession(id).catch(() => {});
     setPinnedIds((p) => p.filter((x) => x !== id));
