@@ -3,6 +3,7 @@ import { getApiBaseUrl } from "./config";
 
 export const TOKEN_KEY = "access_token";
 export const USER_KEY = "user";
+export const DISPLAY_NAME_KEY = "user_display_name";
 
 const client = axios.create({
   baseURL: getApiBaseUrl(),

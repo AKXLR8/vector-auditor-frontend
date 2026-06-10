@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, useRef, type ReactNode } from "react";
 import type { User } from "../types";
 import * as authApi from "../api/auth";
-import client, { TOKEN_KEY, USER_KEY } from "../api/client";
+import client, { TOKEN_KEY, USER_KEY, DISPLAY_NAME_KEY } from "../api/client";
 
 interface AuthContextValue {
   user: User | null;
@@ -102,15 +102,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (token) {
       const parsed = parseToken(token);
       if (parsed) {
+        const cachedName = localStorage.getItem(DISPLAY_NAME_KEY);
+        const isUuid = (s: string) => /^[0-9a-f]{32}$/i.test(s);
+        const subName = isUuid(parsed.sub) ? null : parsed.sub;
+        const display_name = cachedName || parsed.display_name || parsed.preferred_username || subName || null;
+        const email = !isUuid(parsed.sub) ? parsed.sub : null;
         setUser({
           id: parsed.sub,
-          email: parsed.sub,
-          display_name: parsed.display_name || parsed.preferred_username || parsed.sub?.split("@")[0] || null,
+          email: email || parsed.sub,
+          display_name,
           roles: parsed.roles,
           mfa_enabled: false,
           created_at: new Date().toISOString(),
         } as User);
         scheduleRefresh(parsed.exp);
+        /* try to fetch profile for a better display name */
+        authApi.getProfile().then((profile) => {
+          if (profile.display_name && profile.display_name !== display_name) {
+            localStorage.setItem(DISPLAY_NAME_KEY, profile.display_name);
+            setUser((prev) => prev ? { ...prev, display_name: profile.display_name! } : prev);
+          }
+        }).catch(() => {});
       }
     }
     setLoading(false);
@@ -154,6 +166,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (loggingOutRef.current) {
       localStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem(USER_KEY);
+      localStorage.removeItem(DISPLAY_NAME_KEY);
       setToken(null);
       setUser(null);
       try {

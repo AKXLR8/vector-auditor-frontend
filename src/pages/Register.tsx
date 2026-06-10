@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import toast from "react-hot-toast";
 import { useAuth } from "../context/AuthContext";
 import { fetchOAuthConfig } from "../api/auth";
+import { DISPLAY_NAME_KEY } from "../api/client";
 import { errorMessage } from "../lib/errors";
 import { classifyError } from "../lib/errors";
 import {
@@ -120,6 +121,8 @@ export default function Register() {
     setLoading(true);
     try {
       await register(email.trim(), password, firstName.trim(), lastName.trim());
+      const fullName = [firstName.trim(), lastName.trim()].filter(Boolean).join(" ");
+      if (fullName) localStorage.setItem(DISPLAY_NAME_KEY, fullName);
       toast.success("Account created! Please sign in.");
       navigate("/login");
     } catch (err: any) {

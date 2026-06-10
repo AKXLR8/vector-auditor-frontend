@@ -45,6 +45,15 @@ export async function mfaVerify(code: string): Promise<User> {
   return data;
 }
 
+export async function getProfile(): Promise<{ display_name?: string; email?: string }> {
+  try {
+    const { data } = await client.get("/auth/me");
+    return data;
+  } catch {
+    return {};
+  }
+}
+
 export async function health(): Promise<{ status: string; version: string; checks: Record<string, string> }> {
   const { data } = await client.get("/health");
   return data;
