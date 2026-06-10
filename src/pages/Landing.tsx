@@ -156,7 +156,7 @@ export default function Landing() {
       >
         <div className="flex items-center gap-2">
           <LogoMark className="w-12 h-12 text-white" />
-          <span className="text-lg font-semibold tracking-tight hidden sm:inline">Vector Auditor</span>
+          <span className="text-lg hidden sm:inline" style={{ fontFamily: "'New York','NewYork','Times New Roman',Times,serif", fontWeight: 600, letterSpacing: "0.01em" }}>VecxAud</span>
         </div>
 
         <div className="hidden md:flex gap-8">
