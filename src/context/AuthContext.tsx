@@ -105,7 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser({
           id: parsed.sub,
           email: parsed.sub,
-          display_name: parsed.display_name || parsed.preferred_username || null,
+          display_name: parsed.display_name || parsed.preferred_username || parsed.sub?.split("@")[0] || null,
           roles: parsed.roles,
           mfa_enabled: false,
           created_at: new Date().toISOString(),
