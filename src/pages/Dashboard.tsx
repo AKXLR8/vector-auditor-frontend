@@ -1220,14 +1220,14 @@ export default function Dashboard() {
             {session.title}
           </span>
         )}
-        <div className={`flex items-center gap-0.5 shrink-0 ${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity`}>
+        <div className="flex items-center gap-0.5 shrink-0 opacity-100">
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); togglePin(session.id); }}
             aria-label={isPinned ? "Unpin" : "Pin"}
             title={isPinned ? "Unpin" : "Pin"}
-            className={`w-5 h-5 rounded flex items-center justify-center transition-colors ${
-              isPinned ? "text-[#3B82F6] opacity-100" : "text-white/30 hover:text-white/60"
+            className={`hidden sm:flex w-5 h-5 rounded items-center justify-center transition-colors ${
+              isPinned ? "text-[#3B82F6]" : "text-white/30 hover:text-white/60"
             }`}
           >
             <PushPin size={10} weight={isPinned ? "fill" : "regular"} />
@@ -1238,19 +1238,19 @@ export default function Dashboard() {
               onClick={(e) => { e.stopPropagation(); setEditingSessionId(session.id); setEditingSessionTitle(session.title); }}
               aria-label="Rename"
               title="Rename"
-              className="w-5 h-5 rounded flex items-center justify-center text-white/30 hover:text-white/60"
+              className="hidden sm:flex w-5 h-5 rounded items-center justify-center text-white/30 hover:text-white/60"
             >
               <PencilSimple size={10} />
             </button>
           )}
           <button
             type="button"
-            onClick={(e) => deleteSession(session.id, e)}
+            onClick={(e) => { e.stopPropagation(); deleteSession(session.id, e); }}
             aria-label="Delete chat"
             title="Delete chat"
-            className="w-5 h-5 rounded flex items-center justify-center text-white/30 hover:text-red-400"
+            className="w-6 h-6 sm:w-5 sm:h-5 rounded flex items-center justify-center text-white/40 hover:text-red-400 active:text-red-400 transition-colors"
           >
-            <X size={10} />
+            <X size={12} />
           </button>
         </div>
       </div>
