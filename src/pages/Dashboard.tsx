@@ -1636,9 +1636,19 @@ export default function Dashboard() {
       {/* ── Main Content ── */}
       <main className="flex-1 flex flex-col min-w-0 relative">
         {/* Video Background (hero only, lazy-mounted after idle) */}
-        {showVideoBg && (
-          <HeroVideo />
-        )}
+        <AnimatePresence>
+          {showVideoBg && (
+            <motion.div
+              key="hero-video"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0, transition: { duration: 0.6, ease: "easeInOut" } }}
+              className="absolute inset-0 z-0"
+            >
+              <HeroVideo />
+            </motion.div>
+          )}
+        </AnimatePresence>
         {/* Futuristic background layers */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
           <div className="absolute -top-40 -right-40 w-[800px] h-[800px] rounded-full bg-[#3B82F6] opacity-[0.04]"
@@ -1685,28 +1695,36 @@ export default function Dashboard() {
           )}
           <div className="flex-1 flex overflow-hidden relative">
             <div className="flex-1 flex flex-col min-w-0 relative z-10">
-              <>
-                {hasRealMessages ? (
-                  /* ── Chat messages view ── */
-                  <>
-                    <div ref={chatContainerRef} className="flex-1 min-h-0 overflow-y-auto px-2 md:px-4 py-2 md:py-6 relative will-change-[scroll-position] [overscroll-behavior:contain]">
-                      <div className="max-w-3xl mx-auto flex flex-col gap-2.5 md:gap-4">
-                        <AnimatePresence initial={false}>
-                          {messages.map((msg, idx) => (
-                            <motion.div
-                              key={msg.id}
-                              initial={false}
-                              animate={{ opacity: 1, y: 0, scale: 1 }}
-                              transition={{ type: "spring", damping: 24, stiffness: 320, mass: 0.5, delay: idx === messages.length - 1 && firstScrollDoneRef.current ? 0.05 : 0 }}
-                              className={`flex gap-2 md:gap-3 items-start ${msg.role === "user" ? "flex-row-reverse" : ""}`}
-                            >
-                              <div className={`w-7 h-7 md:w-8 md:h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5 ${
-                                msg.role === "assistant"
-                                  ? "bg-white/[0.05] border border-white/[0.06] text-[#9DAFAC]"
-                                  : "bg-gradient-to-br from-[#3B82F6] to-[#1E3A5F] text-white shadow-lg shadow-[#3B82F6]/20"
-                              }`}>
-                                {msg.role === "assistant" ? <Robot size={14} /> : <User size={14} />}
-                              </div>
+              <div className="flex-1 flex flex-col relative">
+                <AnimatePresence mode="wait">
+                  {hasRealMessages ? (
+                    /* ── Chat messages view ── */
+                    <motion.div
+                      key="chat"
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -8 }}
+                      transition={{ duration: 0.4, ease: "easeInOut" }}
+                      className="flex-1 flex flex-col min-h-0"
+                    >
+                      <div ref={chatContainerRef} className="flex-1 min-h-0 overflow-y-auto px-2 md:px-4 py-2 md:py-6 relative will-change-[scroll-position] [overscroll-behavior:contain]">
+                        <div className="max-w-3xl mx-auto flex flex-col gap-2.5 md:gap-4">
+                          <AnimatePresence initial={false}>
+                            {messages.map((msg, idx) => (
+                              <motion.div
+                                key={msg.id}
+                                initial={false}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                transition={{ type: "spring", damping: 24, stiffness: 320, mass: 0.5, delay: idx === messages.length - 1 && firstScrollDoneRef.current ? 0.05 : 0 }}
+                                className={`flex gap-2 md:gap-3 items-start ${msg.role === "user" ? "flex-row-reverse" : ""}`}
+                              >
+                                <div className={`w-7 h-7 md:w-8 md:h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5 ${
+                                  msg.role === "assistant"
+                                    ? "bg-white/[0.05] border border-white/[0.06] text-[#9DAFAC]"
+                                    : "bg-gradient-to-br from-[#3B82F6] to-[#1E3A5F] text-white shadow-lg shadow-[#3B82F6]/20"
+                                }`}>
+                                  {msg.role === "assistant" ? <Robot size={14} /> : <User size={14} />}
+                                </div>
                               <div className={`flex-1 min-w-0 max-w-[88%] md:max-w-[85%] ${msg.role === "user" ? "text-right" : ""}`}>
                                 {msg.role === "user" ? (
                                   <div className={`group relative inline-block px-3.5 md:px-4 py-2.5 md:py-3 text-sm leading-relaxed text-left rounded-[20px] ${
@@ -1845,9 +1863,17 @@ export default function Dashboard() {
                     <div className="shrink-0 relative z-10 px-4">
                       <div className="max-w-3xl mx-auto h-px bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />
                     </div>
-                  </>
+                  </motion.div>
                 ) : (
                   /* ── Copilot-style Hero View ── */
+                  <motion.div
+                    key="onboarding"
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.4, ease: "easeInOut" }}
+                    className="flex-1 flex flex-col"
+                  >
                     <div className="flex-1 flex flex-col items-center justify-center overflow-y-auto px-5 py-6 md:py-8 min-h-0">
                     <div className="flex flex-col items-center justify-center max-w-2xl w-full md:mt-[-5vh]">
 
@@ -1898,7 +1924,10 @@ export default function Dashboard() {
                       </motion.div>
                     </div>
                   </div>
+                  </motion.div>
                 )}
+                </AnimatePresence>
+                </div>
 
                 {/* ── Prompt Input (ChatGPT-style bottom bar) ── */}
                 <motion.form
@@ -1943,7 +1972,6 @@ export default function Dashboard() {
                     </p>
                   </div>
                 </motion.form>
-              </>
             </div>
 
           {/* ── Right overlay: Documents panel / PDF viewer ── */}
