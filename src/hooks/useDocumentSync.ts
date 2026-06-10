@@ -1,10 +1,8 @@
 import { useCallback, useEffect, useRef } from "react";
 import { listDocuments } from "../api/documents";
 import type { Document } from "../types";
-import { getCache, setCache } from "../lib/cache";
 
 const CHANNEL_NAME = "vector-auditor-docs";
-const DOCS_CACHE_KEY = "docs";
 
 export type DocDiff = {
   added: Document[];
@@ -62,20 +60,9 @@ export function useDocumentSync({
     if (isFetchingRef.current) return;
     isFetchingRef.current = true;
     try {
-      /* On first fetch, serve cached docs instantly */
-      if (!hasFetchedRef.current) {
-        const cached = getCache<Document[]>(DOCS_CACHE_KEY);
-        if (cached && !cached.stale) {
-          previousDocsRef.current = cached.data;
-          onDocsRef.current(cached.data);
-        }
-      }
-
       const fresh = await listDocuments();
       const prev = previousDocsRef.current;
       onDocsRef.current(fresh);
-      setCache(DOCS_CACHE_KEY, fresh);
-
       if (hasFetchedRef.current && prev) {
         const prevMap = new Map(prev.map((d) => [docKey(d), d]));
         const freshMap = new Map(fresh.map((d) => [docKey(d), d]));
