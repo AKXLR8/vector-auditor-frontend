@@ -148,8 +148,7 @@ export default function Landing() {
         className="relative z-10 w-full max-w-6xl mx-auto px-4 sm:px-6 py-5 flex items-center justify-between"
       >
         <div className="flex items-center gap-2">
-          <LogoMark className="w-12 h-12 text-white" />
-          <span className="text-lg hidden sm:inline" style={{ fontFamily: "'New York','NewYork','Times New Roman',Times,serif", fontWeight: 600, letterSpacing: "0.01em" }}>VecxAud</span>
+          <LogoMark className="w-24 h-24 text-white" />
         </div>
 
         <div className="hidden md:flex gap-8">
