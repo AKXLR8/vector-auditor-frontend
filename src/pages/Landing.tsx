@@ -3,9 +3,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import {
-  Sparkle, CaretRight, List, MagnifyingGlass, FileText,
-  Quotes, Robot, Brain, Lightning, Globe,
-  Stack, Upload, Shield,
+  Sparkle, CaretRight, List, MagnifyingGlass, FileText, Robot,
+  Stack, Upload,
 } from "@phosphor-icons/react";
 
 /* ─── Shared Primitives ────────────────────────────────────────────── */
@@ -32,34 +31,28 @@ const NAV_LINKS = ["Features", "How It Works", "Pricing", "Docs"];
 
 const FEATURES = [
   {
-    icon: Brain,
     title: "Semantic Search",
-    desc: "all-MiniLM-L6-v2 embeddings power meaning-based retrieval — find relevant passages even when your query uses different words than the document.",
+    desc: "all-mpnet-base-v2 embeddings (768-d) power meaning-based retrieval — find relevant passages even when your query uses different words than the document.",
   },
   {
-    icon: Quotes,
     title: "Cited Grounding",
     desc: "Every answer includes inline [N] citation markers. Click any chip to jump directly to the exact page in the source PDF.",
   },
   {
-    icon: Shield,
-    title: "PII Redaction",
-    desc: "Uploaded documents are automatically scanned for personally identifiable information and redacted before indexing — keeping sensitive data out of your vector store.",
+    title: "Cross-Encoder Reranker",
+    desc: "BAAI/bge-reranker-v2-m3 re-scores 20 candidates and surfaces the top 5 before the LLM — ensuring only the most relevant context reaches the model.",
   },
   {
-    icon: Lightning,
+    title: "PII Redaction",
+    desc: "Presidio analyzer scans all uploads for personally identifiable information (enabled by default). Sensitive data is redacted before indexing — keeping your vector store clean and compliant.",
+  },
+  {
     title: "Section-Aware Chunking",
     desc: "Documents are split by markdown headers into 1000-character windows with a 50-character overlap, preserving section boundaries and context.",
   },
   {
-    icon: Globe,
     title: "Multi-Document Q&A",
     desc: "Select any subset of your uploaded PDFs. The agent queries only the chosen sources, keeping answers scoped and precise.",
-  },
-  {
-    icon: Robot,
-    title: "AI-Powered Answers",
-    desc: "Powered by Inception Labs' Mercury-2",
   },
 ];
 
@@ -431,7 +424,7 @@ export default function Landing() {
           </h2>
         </motion.div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-8">
           {FEATURES.map((f, i) => (
             <motion.div
               key={f.title}
@@ -439,13 +432,11 @@ export default function Landing() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.08, duration: 0.5 }}
-              className="liquid-glass rounded-2xl p-5 md:p-6"
+              className="relative rounded-2xl bg-white/[0.03] border border-white/[0.06] p-6 md:p-7 hover:bg-white/[0.05] hover:border-white/[0.10] transition-all duration-300"
             >
-              <div className="w-9 h-9 rounded-lg bg-white/5 flex items-center justify-center mb-3">
-                <f.icon size={18} className="text-[#00d2ff]" />
-              </div>
-              <h3 className="text-sm font-semibold mb-2">{f.title}</h3>
-              <p className="text-xs sm:text-sm text-white/60 leading-[1.6]">{f.desc}</p>
+              <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-[#00d2ff]/40 to-transparent" />
+              <h3 className="text-sm font-semibold tracking-tight mb-3">{f.title}</h3>
+              <p className="text-xs sm:text-sm text-white/50 leading-[1.7]">{f.desc}</p>
             </motion.div>
           ))}
         </div>
