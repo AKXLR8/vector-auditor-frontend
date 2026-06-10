@@ -62,27 +62,6 @@ const STEPS = [
   { number: "3", title: "Get Cited Answers", desc: "Receive AI-generated answers with inline source citations. Click any citation to view the exact page." },
 ];
 
-const TESTIMONIALS = [
-  {
-    quote: "We analyze hundreds of technical reports weekly. Vector Auditor cut our document review time by 70% and eliminated manual cross-referencing.",
-    name: "Dr. Priya Sharma",
-    role: "Head of Research",
-    company: "MERIDIAN LABS",
-  },
-  {
-    quote: "The citation grounding is a game-changer. Every answer points to a specific page and paragraph — no more hunting for sources.",
-    name: "James Okonkwo",
-    role: "Senior Legal Analyst",
-    company: "AXON LEGAL",
-  },
-  {
-    quote: "Our support team uses it to answer product questions from our knowledge base. Zero hallucination, precise citations every time.",
-    name: "Lena Voss",
-    role: "VP of Customer Success",
-    company: "RADIANT TECH",
-  },
-];
-
 const gradientStyle: React.CSSProperties = {
   backgroundImage:
     "linear-gradient(to right, #091020 0%, #0B2551 12.5%, #A4F4FD 32.5%, #00d2ff 50%, #0B2551 67.5%, #091020 87.5%, #091020 100%)",
@@ -493,50 +472,29 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ─── Section 7 — LogoCloud ─────────────────────────── */}
-      <section className="relative z-10 w-full max-w-6xl mx-auto px-4 sm:px-6 py-16 md:py-20 text-center">
-        <p className="text-xs uppercase tracking-widest text-white/40">
-          Used by teams at
-        </p>
-        <div className="mt-10 grid grid-cols-2 sm:grid-cols-4 gap-6">
-          {["Linear", "Vercel", "Figma", "Stripe", "Ramp", "Notion", "Loom", "Arc"].map((name, i) => (
-            <motion.span
-              key={name}
-              initial={{ opacity: 0, y: 8 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.05, duration: 0.3 }}
-              className="text-sm font-semibold tracking-tight text-white/50 hover:text-white transition-colors"
-            >
-              {name}
-            </motion.span>
-          ))}
-        </div>
-      </section>
-
-      {/* ─── Section 8 — Testimonials ──────────────────────── */}
-      <section className="relative z-10 w-full max-w-6xl mx-auto px-4 sm:px-6 py-20 md:py-28 border-t border-white/10">
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-          {TESTIMONIALS.map((t, i) => (
-            <motion.figure
-              key={t.name}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.1, duration: 0.5 }}
-              className="liquid-glass rounded-2xl p-5 md:p-6 flex flex-col"
-            >
-              <blockquote className="text-sm text-white/80 leading-[1.6] flex-1">
-                &ldquo;{t.quote}&rdquo;
-              </blockquote>
-              <figcaption className="mt-5 pt-4 border-t border-white/10">
-                <p className="text-sm font-semibold">{t.name}</p>
-                <p className="text-xs text-white/50">{t.role}</p>
-                <p className="text-xs text-white font-semibold tracking-wide mt-0.5">{t.company}</p>
-              </figcaption>
-            </motion.figure>
-          ))}
-        </div>
+      {/* ─── Section 7 — Used by ME ────────────────────────── */}
+      <section className="relative z-10 w-full max-w-6xl mx-auto px-4 sm:px-6 py-20 md:py-28 text-center">
+        <motion.p
+          initial={{ opacity: 0, y: 12 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          className="text-4xl sm:text-5xl md:text-7xl font-bold tracking-tight leading-[1.1]"
+        >
+          used by
+          <br />
+          <span className="bg-gradient-to-r from-[#00d2ff] to-[#3B82F6] bg-clip-text text-transparent">ME</span>
+          {" "}& only Me
+        </motion.p>
+        <motion.p
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="mt-6 text-sm md:text-base text-white/40"
+        >
+          (no meetings, no stakeholders, no "circle back")
+        </motion.p>
       </section>
 
       {/* ─── Section 9 — Pricing ───────────────────────────── */}
