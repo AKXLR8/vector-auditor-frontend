@@ -283,7 +283,7 @@ export default function Dashboard() {
   const [uploadProgress, setUploadProgress] = useState<Record<string, { stage: string; progress: number; error?: string }>>({});
   const [activePdf, setActivePdf] = useState<{ docId: string; citation: Citation; page: number; cloudinaryUrl?: string } | null>(null);
   const [activePanel, setActivePanel] = useState<"documents" | null>(null);
-  const [fabOpen, setFabOpen] = useState(false);
+  const [plusOpen, setPlusOpen] = useState(false);
 
   const [chatSearch, setChatSearch] = useState("");
   const debouncedChatSearch = useDebounce(chatSearch, 120);
@@ -1957,16 +1957,47 @@ export default function Dashboard() {
                       loading={loading}
                       placeholder={hasRealMessages ? "Ask a question about your documents..." : "Ask anything"}
                       leftSlot={
-                        <motion.button
-                          type="button"
-                          onClick={() => fileInput.current?.click()}
-                          disabled={loading}
-                          whileTap={{ scale: 0.9 }}
-                          aria-label="Attach files"
-                          className="w-9 h-9 md:w-8 md:h-8 rounded-lg hover:bg-white/[0.06] flex items-center justify-center text-white/40 hover:text-white/80 transition-[colors] disabled:opacity-30"
-                        >
-                          <Plus size={20} weight="bold" />
-                        </motion.button>
+                        <div className="relative">
+                          <motion.button
+                            type="button"
+                            onClick={() => setPlusOpen((p) => !p)}
+                            disabled={loading}
+                            whileTap={{ scale: 0.9 }}
+                            aria-label="More actions"
+                            className="w-9 h-9 md:w-8 md:h-8 rounded-lg hover:bg-white/[0.06] flex items-center justify-center text-white/40 hover:text-white/80 transition-[colors] disabled:opacity-30"
+                          >
+                            <Plus size={20} weight="bold" />
+                          </motion.button>
+                          <AnimatePresence>
+                            {plusOpen && (
+                              <>
+                                <div className="fixed inset-0 z-10" onClick={() => setPlusOpen(false)} />
+                                <motion.div
+                                  initial={{ opacity: 0, scale: 0.9, y: 6 }}
+                                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                                  exit={{ opacity: 0, scale: 0.9, y: 6 }}
+                                  transition={{ duration: 0.12 }}
+                                  className="absolute bottom-full left-0 mb-1.5 flex flex-col gap-1 min-w-[140px] bg-[#0C1217] border border-white/[0.08] rounded-xl p-1 shadow-xl z-20"
+                                >
+                                  <button
+                                    onClick={() => { fileInput.current?.click(); setPlusOpen(false); }}
+                                    className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-white/[0.06] text-xs text-white/70 hover:text-white transition-colors text-left"
+                                  >
+                                    <FileText size={13} />
+                                    Upload Document
+                                  </button>
+                                  <button
+                                    onClick={() => { setActivePanel("documents"); setPlusOpen(false); }}
+                                    className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-white/[0.06] text-xs text-white/70 hover:text-white transition-colors text-left"
+                                  >
+                                    <Folder size={13} />
+                                    Create Group
+                                  </button>
+                                </motion.div>
+                              </>
+                            )}
+                          </AnimatePresence>
+                        </div>
                       }
                       footerSlot={
                         <QueryControls
@@ -2025,49 +2056,6 @@ export default function Dashboard() {
                 />
               </div>
             )}
-          </div>
-
-          {/* ── FAB: Upload Document / Create Group ── */}
-          <div className="fixed bottom-6 right-6 z-30 flex flex-col items-end gap-2">
-            <AnimatePresence>
-              {fabOpen && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.8, y: 8 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.8, y: 8 }}
-                  transition={{ duration: 0.15 }}
-                  className="flex flex-col items-end gap-1.5"
-                >
-                  <button
-                    onClick={() => { fileInput.current?.click(); setFabOpen(false); }}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.07] hover:bg-white/[0.12] border border-white/[0.08] text-xs text-white/80 hover:text-white transition-colors whitespace-nowrap"
-                  >
-                    <FileText size={12} />
-                    Upload Document
-                  </button>
-                  <button
-                    onClick={() => { setActivePanel("documents"); setFabOpen(false); }}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.07] hover:bg-white/[0.12] border border-white/[0.08] text-xs text-white/80 hover:text-white transition-colors whitespace-nowrap"
-                  >
-                    <Folder size={12} />
-                    Create Group
-                  </button>
-                </motion.div>
-              )}
-            </AnimatePresence>
-            <motion.button
-              onClick={() => setFabOpen((p) => !p)}
-              whileTap={{ scale: 0.9 }}
-              className="w-11 h-11 rounded-full bg-gradient-to-br from-[#60A5FA] via-[#3B82F6] to-[#1E3A5F] text-white flex items-center justify-center shadow-lg shadow-[#3B82F6]/30 active:shadow-inner transition-shadow"
-            >
-              <motion.span
-                animate={{ rotate: fabOpen ? 45 : 0 }}
-                transition={{ duration: 0.2 }}
-                className="flex"
-              >
-                <Plus size={22} weight="bold" />
-              </motion.span>
-            </motion.button>
           </div>
         </FileDropZone>
       </main>
