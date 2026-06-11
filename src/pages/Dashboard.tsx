@@ -309,6 +309,7 @@ export default function Dashboard() {
   const uploadStartedAtRef = useRef<Map<string, number>>(new Map());
   const uploadToDocRef = useRef<Map<string, string>>(new Map());
   const touchDragDocRef = useRef<string | null>(null);
+  const overlayStateRef = useRef<string | null>(null);
   const sessionsRef = useRef<LocalSession[]>(sessions);
   sessionsRef.current = sessions;
   const sessionFetchTokenRef = useRef(0);
@@ -346,6 +347,27 @@ export default function Dashboard() {
     threshold: 60,
     enabled: isMobile && !hasOverlay,
   });
+
+  // Intercept browser back to close overlays before navigating
+  useEffect(() => {
+    const onPopState = () => {
+      if (sidebarOpen) { setSidebarOpen(false); return; }
+      if (activePanel === "documents") { setActivePanel(null); return; }
+      if (activePdf) { setActivePdf(null); return; }
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, [sidebarOpen, activePanel, activePdf]);
+
+  // Push history state once when any overlay opens so back closes it first
+  useEffect(() => {
+    const hasOverlay = sidebarOpen || activePanel === "documents" || !!activePdf;
+    if (hasOverlay && !overlayStateRef.current) {
+      overlayStateRef.current = "1";
+      window.history.pushState(null, "");
+    }
+    if (!hasOverlay) overlayStateRef.current = null;
+  }, [sidebarOpen, activePanel, activePdf]);
 
   const mapServerMessages = (raw: any[]): Message[] =>
     (raw || []).map((m: any) => ({
