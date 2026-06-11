@@ -72,6 +72,7 @@ export default function DocumentsPanel({ docs, groups, onGroupsChange, onDocsDel
   const [editingGroup, setEditingGroup] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [dragOverGroupId, setDragOverGroupId] = useState<string | null>(null);
+  const touchDragDoc = useRef<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
   const toggleGroup = (id: string) => {
@@ -259,7 +260,7 @@ export default function DocumentsPanel({ docs, groups, onGroupsChange, onDocsDel
             const isExpanded = expandedGroups.has(group.id);
             const groupDocs = group.documentIds.map(getDocById).filter(Boolean) as Document[];
             return (
-              <div key={group.id} className={`rounded-lg border transition-colors overflow-hidden ${
+              <div key={group.id} data-group-id={group.id} className={`rounded-lg border transition-colors overflow-hidden ${
                 dragOverGroupId === group.id
                   ? "border-[#00E6CF]/40 bg-[#00E6CF]/5"
                   : "border-[#102321]/40 bg-[#0A1514]/30"
@@ -271,6 +272,8 @@ export default function DocumentsPanel({ docs, groups, onGroupsChange, onDocsDel
                   onDragEnter={(e) => { e.preventDefault(); setDragOverGroupId(group.id); }}
                   onDragLeave={() => setDragOverGroupId(null)}
                   onDrop={(e) => { e.preventDefault(); setDragOverGroupId(null); const did = e.dataTransfer.getData("text/plain"); if (did) addDocToGroup(group.id, did); }}
+                  onTouchMove={(e) => { const touch = e.changedTouches[0]; const el = document.elementFromPoint(touch.clientX, touch.clientY); if (el && el.closest("[data-group-id]")) setDragOverGroupId(group.id); else setDragOverGroupId(null); }}
+                  onTouchEnd={(e) => { setDragOverGroupId(null); const did = touchDragDoc.current; if (did) { touchDragDoc.current = null; addDocToGroup(group.id, did); } }}
                 >
                   <button className="shrink-0 text-[#9DAFAC]">
                     {isExpanded ? <CaretDown size={12} /> : <CaretRight size={12} />}
@@ -403,6 +406,8 @@ export default function DocumentsPanel({ docs, groups, onGroupsChange, onDocsDel
               <div key={did}
                 draggable
                 onDragStart={(e) => handleDragStart(e, did)}
+                onTouchStart={() => { touchDragDoc.current = did; }}
+                onTouchEnd={() => { touchDragDoc.current = null; }}
                 title={name}
                 className={`group flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm transition-colors cursor-pointer
                   ${isSelected ? "bg-[#00E6CF]/5" : "hover:bg-[#0A1514]"}`}

@@ -15,6 +15,7 @@ export function FileDropZone({ onFiles, accept = ".pdf,.md,.txt,.docx", children
 
   const onDragOver = (e: DragEvent) => {
     if (disabled) return;
+    if (![...e.dataTransfer.types].includes("Files")) return;
     e.preventDefault();
     e.dataTransfer.dropEffect = "copy";
     if (!over) setOver(true);
@@ -26,6 +27,7 @@ export function FileDropZone({ onFiles, accept = ".pdf,.md,.txt,.docx", children
 
   const onDrop = (e: DragEvent) => {
     if (disabled) return;
+    if (![...e.dataTransfer.types].includes("Files")) return;
     e.preventDefault();
     setOver(false);
     const files = e.dataTransfer.files;

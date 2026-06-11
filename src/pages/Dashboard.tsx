@@ -308,6 +308,7 @@ export default function Dashboard() {
   const abortControllerRef = useRef<AbortController | null>(null);
   const uploadStartedAtRef = useRef<Map<string, number>>(new Map());
   const uploadToDocRef = useRef<Map<string, string>>(new Map());
+  const touchDragDocRef = useRef<string | null>(null);
   const sessionsRef = useRef<LocalSession[]>(sessions);
   sessionsRef.current = sessions;
   const sessionFetchTokenRef = useRef(0);
@@ -1518,7 +1519,7 @@ export default function Dashboard() {
                 {docGroups.map((group) => {
                   const allSelected = group.documentIds.length > 0 && group.documentIds.every((did) => selectedDocs.has(did));
                   return (
-                    <div key={group.id}
+                    <div key={group.id} data-sidebar-group={group.id}
                       className={`group flex items-center gap-2 px-2.5 py-2.5 sm:py-2 rounded-xl text-sm transition-[colors] duration-300 cursor-pointer ${
                         sidebarDragOverGroup === group.id
                           ? "bg-[#3B82F6]/10 border border-[#3B82F6]/30"
@@ -1529,6 +1530,8 @@ export default function Dashboard() {
                       onDragEnter={(e) => { e.preventDefault(); setSidebarDragOverGroup(group.id); }}
                       onDragLeave={() => setSidebarDragOverGroup(null)}
                       onDrop={(e) => { e.preventDefault(); setSidebarDragOverGroup(null); const did = e.dataTransfer.getData("text/plain"); if (did) sidebarAddDocToGroup(group.id, did); }}
+                      onTouchMove={(e) => { const touch = e.changedTouches[0]; const el = document.elementFromPoint(touch.clientX, touch.clientY); if (el && el.closest("[data-sidebar-group]")) setSidebarDragOverGroup(group.id); else setSidebarDragOverGroup(null); }}
+                      onTouchEnd={() => { setSidebarDragOverGroup(null); const did = touchDragDocRef.current; if (did) { touchDragDocRef.current = null; sidebarAddDocToGroup(group.id, did); } }}
                     >
                       <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors ${allSelected ? "bg-[#3B82F6] border-[#3B82F6]" : "border-white/[0.15]"}`}>
                         {allSelected && (
@@ -1585,6 +1588,8 @@ export default function Dashboard() {
                       <div key={did}
                         draggable
                         onDragStart={(e) => sidebarHandleDragStart(e, did)}
+                        onTouchStart={() => { touchDragDocRef.current = did; }}
+                        onTouchEnd={() => { touchDragDocRef.current = null; }}
                         title={name}
                         className="group flex items-center gap-2 px-2.5 py-3 md:py-2 rounded-xl text-sm hover:bg-white/[0.03] transition-[colors] duration-200 cursor-pointer active:bg-white/[0.05]"
                         onClick={() => toggleDoc(did)}
