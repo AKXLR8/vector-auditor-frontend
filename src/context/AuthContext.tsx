@@ -109,8 +109,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (parsed) {
         const cachedName = localStorage.getItem(DISPLAY_NAME_KEY);
         const isUuid = (s: string) => /^[0-9a-f]{32}$/i.test(s);
+        const isEmail = (s: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
         const subName = isUuid(parsed.sub) ? null : parsed.sub;
-        const display_name = cachedName || parsed.display_name || parsed.preferred_username || subName || null;
+        const preferredName = parsed.preferred_username && !isUuid(parsed.preferred_username) && !isEmail(parsed.preferred_username) ? parsed.preferred_username : null;
+        const display_name = cachedName || parsed.display_name || preferredName || subName || null;
         const email = !isUuid(parsed.sub) ? parsed.sub : null;
         setUser({
           id: parsed.sub,
@@ -173,7 +175,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (loggingOutRef.current) {
       localStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem(USER_KEY);
-      localStorage.removeItem(DISPLAY_NAME_KEY);
       setToken(null);
       setUser(null);
       try {
