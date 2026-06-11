@@ -87,7 +87,7 @@ export default function Login() {
       const { provider, code } = e.data || {};
       if (provider === "github" && code) {
         setOauthLoading(true);
-        oauthLogin("github", code).then(() => navigate(from, { replace: true })).catch((err: any) => {
+        oauthLogin("github", code).then(() => navigate(from)).catch((err: any) => {
           setError(errorMessage(err, "GitHub login failed"));
         }).finally(() => setOauthLoading(false));
       }
@@ -128,7 +128,7 @@ export default function Login() {
     setLoading(true);
     try {
       await login(email.trim(), password);
-      navigate(from, { replace: true });
+      navigate(from);
     } catch (err: any) {
       setError(errorMessage(err, "Login failed"));
     } finally {
