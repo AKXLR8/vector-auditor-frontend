@@ -1322,7 +1322,7 @@ export default function Dashboard() {
       >
         {/* Logo + mobile close */}
         <div className="flex items-center gap-2 px-4 pt-5 md:pt-4 pb-1 shrink-0">
-          <img src="/logo.png" alt="Logo" className="w-12 h-12 md:w-10 md:h-10 object-contain" />
+          <img src="/logo.png" alt="Logo" className="w-16 h-16 md:w-14 md:h-14 object-contain" />
           <span className="text-sm font-semibold tracking-tight text-white/80">Vector Auditor</span>
           <div className="flex-1" />
           <button

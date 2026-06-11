@@ -127,7 +127,7 @@ export default function Landing() {
         className="relative z-10 w-full max-w-6xl mx-auto px-4 sm:px-6 py-5 flex items-center justify-between"
       >
         <div className="flex items-center gap-2">
-          <LogoMark className="w-24 h-24 text-white" />
+          <LogoMark className="w-36 h-36 text-white" />
         </div>
 
         <div className="hidden md:flex gap-8">
@@ -613,7 +613,7 @@ export default function Landing() {
       <footer className="relative z-10 border-t border-white/10 py-8 safe-area-bottom">
         <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-white/40">
           <div className="flex items-center gap-2">
-            <LogoMark className="w-10 h-10" />
+            <LogoMark className="w-16 h-16" />
             <span className="font-medium text-white/60">Vector Auditor</span>
           </div>
           <div className="flex items-center justify-center gap-4 flex-wrap text-center">

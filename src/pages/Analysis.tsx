@@ -136,7 +136,7 @@ export default function Analysis() {
       <header className="shrink-0 z-20 border-b border-white/[0.06] bg-[#070E0D]/85 backdrop-blur-xl">
         <div className="flex items-center gap-3 px-4 sm:px-6 h-14">
           <Link to="/chat" className="inline-flex items-center gap-2 group" aria-label="Back to chat">
-            <img src="/logo.png" alt="Logo" className="w-10 h-10 object-contain" />
+            <img src="/logo.png" alt="Logo" className="w-14 h-14 object-contain" />
             <span className="text-sm font-semibold tracking-tight text-white/80 group-hover:text-white transition-colors hidden sm:inline">
               Vector Auditor
             </span>
