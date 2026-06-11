@@ -283,6 +283,7 @@ export default function Dashboard() {
   const [uploadProgress, setUploadProgress] = useState<Record<string, { stage: string; progress: number; error?: string }>>({});
   const [activePdf, setActivePdf] = useState<{ docId: string; citation: Citation; page: number; cloudinaryUrl?: string } | null>(null);
   const [activePanel, setActivePanel] = useState<"documents" | null>(null);
+  const [fabOpen, setFabOpen] = useState(false);
 
   const [chatSearch, setChatSearch] = useState("");
   const debouncedChatSearch = useDebounce(chatSearch, 120);
@@ -1895,6 +1896,50 @@ export default function Dashboard() {
                   </div>
                 )}
 
+                {/* ── Doc/Group selection indicator ── */}
+                {(selectedDocs.size > 0 || selectedGroups.size > 0) && (
+                  <div className="shrink-0 px-2 md:px-4 pt-1">
+                    <div className="max-w-3xl mx-auto flex items-center gap-1.5 flex-wrap">
+                      {(() => {
+                        const matchedGroup = docGroups.find(
+                          (g) => g.documentIds.length > 0 && g.documentIds.every((did) => selectedDocs.has(did)) && selectedDocs.size === g.documentIds.length
+                        );
+                        if (matchedGroup) {
+                          return (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-[#3B82F6]/10 border border-[#3B82F6]/20 text-xs text-[#3B82F6]">
+                              <Folder size={10} weight="fill" />
+                              {matchedGroup.name}
+                            </span>
+                          );
+                        }
+                        const names = Array.from(selectedDocs)
+                          .map((id) => dedupedDocs.find((d) => (d.document_id ?? d.id) === id))
+                          .filter(Boolean) as Document[];
+                        const maxVisible = 3;
+                        return (
+                          <>
+                            {names.slice(0, maxVisible).map((doc) => (
+                              <span key={doc.document_id ?? doc.id} className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-white/[0.05] border border-white/[0.08] text-xs text-white/70">
+                                <FileText size={10} />
+                                {doc.filename?.split("/").pop() || doc.document_id?.slice(0, 8) || "doc"}
+                              </span>
+                            ))}
+                            {names.length > maxVisible && (
+                              <span className="text-xs text-white/40">+{names.length - maxVisible} more</span>
+                            )}
+                          </>
+                        );
+                      })()}
+                      <button
+                        onClick={() => { setSelectedDocs(new Set()); setSelectedGroups(new Set()); }}
+                        className="ml-auto text-xs text-white/30 hover:text-white/60 transition-colors"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {/* ── Prompt Input (ChatGPT-style bottom bar) ── */}
                 <motion.form
                   initial={{ opacity: 0, y: 16 }}
@@ -1980,6 +2025,49 @@ export default function Dashboard() {
                 />
               </div>
             )}
+          </div>
+
+          {/* ── FAB: Upload Document / Create Group ── */}
+          <div className="fixed bottom-6 right-6 z-30 flex flex-col items-end gap-2">
+            <AnimatePresence>
+              {fabOpen && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8, y: 8 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.8, y: 8 }}
+                  transition={{ duration: 0.15 }}
+                  className="flex flex-col items-end gap-1.5"
+                >
+                  <button
+                    onClick={() => { fileInput.current?.click(); setFabOpen(false); }}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.07] hover:bg-white/[0.12] border border-white/[0.08] text-xs text-white/80 hover:text-white transition-colors whitespace-nowrap"
+                  >
+                    <FileText size={12} />
+                    Upload Document
+                  </button>
+                  <button
+                    onClick={() => { setActivePanel("documents"); setFabOpen(false); }}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.07] hover:bg-white/[0.12] border border-white/[0.08] text-xs text-white/80 hover:text-white transition-colors whitespace-nowrap"
+                  >
+                    <Folder size={12} />
+                    Create Group
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+            <motion.button
+              onClick={() => setFabOpen((p) => !p)}
+              whileTap={{ scale: 0.9 }}
+              className="w-11 h-11 rounded-full bg-gradient-to-br from-[#60A5FA] via-[#3B82F6] to-[#1E3A5F] text-white flex items-center justify-center shadow-lg shadow-[#3B82F6]/30 active:shadow-inner transition-shadow"
+            >
+              <motion.span
+                animate={{ rotate: fabOpen ? 45 : 0 }}
+                transition={{ duration: 0.2 }}
+                className="flex"
+              >
+                <Plus size={22} weight="bold" />
+              </motion.span>
+            </motion.button>
           </div>
         </FileDropZone>
       </main>
