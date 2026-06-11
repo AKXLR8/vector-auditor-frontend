@@ -127,7 +127,7 @@ export default function Landing() {
         className="relative z-10 w-full max-w-6xl mx-auto px-4 sm:px-6 py-2 flex items-center justify-between h-16"
       >
         <div className="flex items-center gap-2 overflow-visible h-full">
-          <LogoMark className="w-44 h-44 text-white -mt-14" />
+          <LogoMark className="w-44 h-44 text-white -mt-[53px]" />
         </div>
 
         <div className="hidden md:flex gap-8">
