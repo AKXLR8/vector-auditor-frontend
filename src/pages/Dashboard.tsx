@@ -52,6 +52,7 @@ import {
 
 const GROUPS_KEY = "vector_doc_groups";
 const PINNED_KEY_PREFIX = "pinned_sessions_";
+const DOCS_CACHE_PREFIX = "vector_docs_cache_";
 
 function loadGroups(): DocGroup[] {
   try { const raw = localStorage.getItem(GROUPS_KEY); if (raw) return JSON.parse(raw); } catch { }
@@ -60,6 +61,22 @@ function loadGroups(): DocGroup[] {
 
 function saveGroups(groups: DocGroup[]) {
   try { localStorage.setItem(GROUPS_KEY, JSON.stringify(groups)); } catch { }
+}
+
+function docsCacheKey(userId: string) {
+  return `${DOCS_CACHE_PREFIX}${userId}`;
+}
+
+function loadCachedDocs(userId: string): Document[] | null {
+  try {
+    const raw = localStorage.getItem(docsCacheKey(userId));
+    if (raw) return JSON.parse(raw) as Document[];
+  } catch { }
+  return null;
+}
+
+function saveCachedDocs(userId: string, docs: Document[]) {
+  try { localStorage.setItem(docsCacheKey(userId), JSON.stringify(docs)); } catch { }
 }
 
 function pinnedKey(userId: string) {
@@ -475,7 +492,9 @@ export default function Dashboard() {
           const id = d.document_id ?? d.id;
           return d.status === "processing" && !serverIds.has(id);
         });
-        return [...pending, ...fresh];
+        const merged = [...pending, ...fresh];
+        if (uid) saveCachedDocs(uid, merged);
+        return merged;
       });
       setDocsLoading(false);
     },
@@ -497,6 +516,9 @@ export default function Dashboard() {
 
   // Persist groups to localStorage
   useEffect(() => { saveGroups(docGroups); }, [docGroups]);
+
+  // Persist docs to localStorage cache
+  useEffect(() => { if (uid) saveCachedDocs(uid, docs); }, [uid, docs]);
 
   useEffect(() => {
     if (!uid) return;
@@ -550,6 +572,11 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (uid) {
+      const cached = loadCachedDocs(uid);
+      if (cached && cached.length > 0) {
+        setDocs(cached);
+        setDocsLoading(false);
+      }
       void refetch();
     }
   }, [uid, refetch]);
