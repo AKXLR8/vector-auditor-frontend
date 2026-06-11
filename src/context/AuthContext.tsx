@@ -47,6 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loggingOutRef = useRef(false);
 
   const REFRESH_THRESHOLD_SEC = 86400; // 1 day — must match backend REFRESH_THRESHOLD_MINUTES
+  const MIN_REFRESH_DELAY_MS = 10_000;
 
   const scheduleRefresh = (exp: number) => {
     if (refreshTimer.current) clearTimeout(refreshTimer.current);
@@ -63,12 +64,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }, (remaining - REFRESH_THRESHOLD_SEC) * 1000);
     }
 
+    let delayMs: number;
     if (remaining <= REFRESH_THRESHOLD_SEC) {
-      refreshTimer.current = setTimeout(doRefresh, 0);
+      delayMs = 0;
     } else {
-      const msUntilWindow = (remaining - REFRESH_THRESHOLD_SEC) * 1000;
-      refreshTimer.current = setTimeout(doRefresh, msUntilWindow);
+      delayMs = (remaining - REFRESH_THRESHOLD_SEC) * 1000;
     }
+
+    if (delayMs < MIN_REFRESH_DELAY_MS) delayMs = MIN_REFRESH_DELAY_MS;
+
+    refreshTimer.current = setTimeout(doRefresh, delayMs);
   };
 
   const doRefresh = async () => {
@@ -116,13 +121,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           created_at: new Date().toISOString(),
         } as User);
         scheduleRefresh(parsed.exp);
-        /* try to fetch profile for a better display name */
-        authApi.getProfile().then((profile) => {
-          if (profile.display_name && profile.display_name !== display_name) {
-            localStorage.setItem(DISPLAY_NAME_KEY, profile.display_name);
-            setUser((prev) => prev ? { ...prev, display_name: profile.display_name! } : prev);
-          }
-        }).catch(() => {});
+        /* try to fetch profile for a better display name (once) */
+        if (!localStorage.getItem(DISPLAY_NAME_KEY)) {
+          authApi.getProfile().then((profile) => {
+            if (profile.display_name && profile.display_name !== display_name) {
+              localStorage.setItem(DISPLAY_NAME_KEY, profile.display_name);
+              setUser((prev) => prev ? { ...prev, display_name: profile.display_name! } : prev);
+            }
+          }).catch(() => {});
+        }
       }
     }
     setLoading(false);
