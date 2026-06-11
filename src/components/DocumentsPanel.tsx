@@ -182,28 +182,43 @@ export default function DocumentsPanel({ docs, groups, onGroupsChange, onDocsDel
       </div>
 
       {/* Upload progress */}
-      {Object.keys(uploadProgress).length > 0 && (
-        <div className="px-4 py-2 border-b border-[#102321]/30 space-y-1.5 shrink-0">
-          {Object.entries(uploadProgress).map(([uid, prog]) => (
-            <div key={uid} className="space-y-1">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-[#9DAFAC]">{STAGE_LABELS[prog.stage] || prog.stage}</span>
-                <span className="text-[#9DAFAC] font-mono">{prog.progress}%</span>
+      {(uploading || Object.keys(uploadProgress).length > 0) && (
+        <div className="px-4 py-2 border-b border-[#102321]/30 shrink-0">
+          {(() => {
+            const entries = Object.entries(uploadProgress).filter(([k]) => k !== "_pending");
+            const total = entries.length || 1;
+            const completed = entries.filter(([, v]) => v.stage === "completed").length;
+            const failed = entries.filter(([, v]) => v.stage === "failed").length;
+            const avgProg = entries.length > 0
+              ? entries.reduce((s, [, v]) => s + v.progress, 0) / entries.length
+              : 0;
+            const pending = entries.filter(([, v]) => !["completed", "failed", "duplicate", "skipped", "stuck"].includes(v.stage)).length;
+            if (entries.length === 0 && !uploading) return null;
+            const label = uploadProgress._pending
+              ? "Starting upload..."
+              : failed > 0
+              ? `${failed} failed`
+              : pending > 0
+              ? `${pending} doc${pending > 1 ? "s" : ""} uploading`
+              : `${completed} done`;
+            const pct = uploadProgress._pending ? 0 : avgProg;
+            return (
+              <div className="space-y-1">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-[#9DAFAC]">{label}</span>
+                  <span className="text-[#9DAFAC] font-mono">{Math.round(pct)}%</span>
+                </div>
+                <div className="w-full h-1 rounded-full bg-[#102321] overflow-hidden">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${pct}%` }}
+                    transition={{ duration: 0.5, ease: "easeOut" }}
+                    className={`h-full rounded-full ${failed > 0 ? "bg-red-500" : pending === 0 ? "bg-green-500" : "bg-gradient-to-r from-[#00E6CF] to-[#00332E]"}`}
+                  />
+                </div>
               </div>
-              <div className="w-full h-1 rounded-full bg-[#102321] overflow-hidden">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${prog.progress}%` }}
-                  transition={{ duration: 0.5, ease: "easeOut" }}
-                  className={`h-full rounded-full ${prog.stage === "failed" ? "bg-red-500" : prog.stage === "completed" ? "bg-green-500" : "bg-gradient-to-r from-[#00E6CF] to-[#00332E]"}`}
-                />
-              </div>
-              {prog.error && <p className="text-[10px] text-red-400">{prog.error}</p>}
-              {prog.stage === "completed" && (
-                <p className="text-[10px] text-green-400 flex items-center gap-1"><CheckCircle size={10} /> Ready</p>
-              )}
-            </div>
-          ))}
+            );
+          })()}
         </div>
       )}
 

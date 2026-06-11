@@ -661,8 +661,8 @@ export default function Dashboard() {
     const timers: ReturnType<typeof setTimeout>[] = [];
 
     // Schedule removal of terminal entries after 3s
-    for (const [uid, entry] of Object.entries(uploadProgress)) {
-      if (TERMINAL_STAGES.has(entry.stage)) {
+      for (const [uid, entry] of Object.entries(uploadProgress)) {
+      if (uid === "_pending" || TERMINAL_STAGES.has(entry.stage)) {
         const timer = setTimeout(() => {
           setUploadProgress((prev) => {
             if (!prev[uid] || !TERMINAL_STAGES.has(prev[uid].stage)) return prev;
@@ -678,6 +678,7 @@ export default function Dashboard() {
 
     const interval = setInterval(async () => {
       for (const uid of ids) {
+        if (uid === "_pending") continue;
         const entry = uploadProgress[uid];
         if (TERMINAL_STAGES.has(entry.stage)) continue;
 
@@ -1079,7 +1080,12 @@ export default function Dashboard() {
 
   const handleUpload = async (files: FileList | null) => {
     if (!files?.length) return;
+    const fileCount = files.length;
     setUploading(true);
+    setUploadProgress((prev) => ({
+      ...prev,
+      _pending: { stage: "uploading", progress: 0 },
+    }));
     try {
       const res = await uploadDocuments(Array.from(files));
       const progressMap: Record<string, { stage: string; progress: number }> = {};
@@ -1108,9 +1114,11 @@ export default function Dashboard() {
         });
         willTrack += 1;
       }
-      if (Object.keys(progressMap).length > 0) {
-        setUploadProgress((prev) => ({ ...prev, ...progressMap }));
-      }
+      setUploadProgress((prev) => {
+        const next = { ...prev };
+        delete next._pending;
+        return { ...next, ...progressMap };
+      });
       if (optimistic.length > 0) {
         setDocs((prev) => [...prev, ...optimistic]);
       }
@@ -1126,6 +1134,11 @@ export default function Dashboard() {
       }
       notify();
     } catch (err: any) {
+      setUploadProgress((prev) => {
+        const next = { ...prev };
+        delete next._pending;
+        return next;
+      });
       toast.error(err.response?.data?.detail || "Upload failed");
     } finally {
       setUploading(false);
@@ -1449,35 +1462,50 @@ export default function Dashboard() {
               )}
             </div>
             {/* Upload progress */}
-            {Object.keys(uploadProgress).length > 0 && (
-              <div className="space-y-1.5 mb-2">
-                {Object.entries(uploadProgress).map(([uid, prog]) => (
-                  <div key={uid} className="px-2.5 py-2 rounded-xl bg-white/[0.03] border border-white/[0.04] space-y-1">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-[#9DAFAC]/70">{STAGE_LABELS[prog.stage] || prog.stage}</span>
-                      <span className="text-[#9DAFAC]/50 font-mono">{prog.progress}%</span>
-                    </div>
-                    <div className="w-full h-1 rounded-full bg-white/[0.06] overflow-hidden">
-                      <motion.div
-                        initial={{ scaleX: 0 }}
-                        animate={{ scaleX: prog.progress / 100 }}
-                        transition={{ duration: 0.5, ease: "easeOut" }}
-                        style={{ transformOrigin: "left" }}
-                        className={`h-full rounded-full will-change-[transform] ${
-                          prog.stage === "failed"
-                            ? "bg-red-500"
-                            : prog.stage === "completed"
-                            ? "bg-green-500"
-                            : "bg-gradient-to-r from-[#3B82F6] to-[#1E3A5F]"
-                        }`}
-                      />
-                    </div>
-                    {prog.error && <p className="text-[10px] text-red-400/80">{prog.error}</p>}
-                    {prog.stage === "completed" && (
-                      <p className="text-[10px] text-green-400/80 flex items-center gap-1">Ready</p>
-                    )}
-                  </div>
-                ))}
+            {(uploading || Object.keys(uploadProgress).length > 0) && (
+              <div className="px-2.5 py-2 mb-2 rounded-xl bg-white/[0.03] border border-white/[0.04] space-y-1">
+                {(() => {
+                  const entries = Object.entries(uploadProgress).filter(([k]) => k !== "_pending");
+                  const total = entries.length || 1;
+                  const completed = entries.filter(([, v]) => v.stage === "completed").length;
+                  const failed = entries.filter(([, v]) => v.stage === "failed").length;
+                  const avgProg = entries.length > 0
+                    ? entries.reduce((s, [, v]) => s + v.progress, 0) / entries.length
+                    : 0;
+                  const pending = entries.filter(([, v]) => !TERMINAL_STAGES.has(v.stage)).length;
+                  if (entries.length === 0 && !uploading) return null;
+                  const label = uploadProgress._pending
+                    ? "Starting upload..."
+                    : failed > 0
+                    ? `${failed} failed`
+                    : pending > 0
+                    ? `${pending} doc${pending > 1 ? "s" : ""} uploading`
+                    : `${completed} done`;
+                  const pct = uploadProgress._pending ? 0 : avgProg;
+                  return (
+                    <>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-[#9DAFAC]/70">{label}</span>
+                        <span className="text-[#9DAFAC]/50 font-mono">{Math.round(pct)}%</span>
+                      </div>
+                      <div className="w-full h-1 rounded-full bg-white/[0.06] overflow-hidden">
+                        <motion.div
+                          initial={{ scaleX: 0 }}
+                          animate={{ scaleX: pct / 100 }}
+                          transition={{ duration: 0.5, ease: "easeOut" }}
+                          style={{ transformOrigin: "left" }}
+                          className={`h-full rounded-full will-change-[transform] ${
+                            failed > 0
+                              ? "bg-red-500"
+                              : pending === 0
+                              ? "bg-green-500"
+                              : "bg-gradient-to-r from-[#3B82F6] to-[#1E3A5F]"
+                          }`}
+                        />
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
             )}
             {/* ── Groups ── */}
@@ -1892,6 +1920,57 @@ export default function Dashboard() {
                           </motion.button>
                         ))}
                       </motion.div>
+                    </div>
+                  </div>
+                )}
+
+                {/* ── Mobile upload popup ── */}
+                {(uploading || Object.keys(uploadProgress).length > 0) && (
+                  <div className="md:hidden shrink-0 px-3 pt-2">
+                    <div className="max-w-3xl mx-auto">
+                      <div className="px-3 py-2 rounded-xl bg-[#0C1217] border border-white/[0.08] space-y-1 shadow-lg">
+                        {(() => {
+                          const entries = Object.entries(uploadProgress).filter(([k]) => k !== "_pending");
+                          const completed = entries.filter(([, v]) => v.stage === "completed").length;
+                          const failed = entries.filter(([, v]) => v.stage === "failed").length;
+                          const avgProg = entries.length > 0
+                            ? entries.reduce((s, [, v]) => s + v.progress, 0) / entries.length
+                            : 0;
+                          const pending = entries.filter(([, v]) => !TERMINAL_STAGES.has(v.stage)).length;
+                          if (entries.length === 0 && !uploading) return null;
+                          const label = uploadProgress._pending
+                            ? "Starting upload..."
+                            : failed > 0
+                            ? `${failed} failed`
+                            : pending > 0
+                            ? `${pending} doc${pending > 1 ? "s" : ""} uploading`
+                            : `${completed} done`;
+                          const pct = uploadProgress._pending ? 0 : avgProg;
+                          return (
+                            <>
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="text-white/70">{label}</span>
+                                <span className="text-white/40 font-mono">{Math.round(pct)}%</span>
+                              </div>
+                              <div className="w-full h-1 rounded-full bg-white/[0.06] overflow-hidden">
+                                <motion.div
+                                  initial={{ scaleX: 0 }}
+                                  animate={{ scaleX: pct / 100 }}
+                                  transition={{ duration: 0.5, ease: "easeOut" }}
+                                  style={{ transformOrigin: "left" }}
+                                  className={`h-full rounded-full will-change-[transform] ${
+                                    failed > 0
+                                      ? "bg-red-500"
+                                      : pending === 0
+                                      ? "bg-green-500"
+                                      : "bg-gradient-to-r from-[#3B82F6] to-[#1E3A5F]"
+                                  }`}
+                                />
+                              </div>
+                            </>
+                          );
+                        })()}
+                      </div>
                     </div>
                   </div>
                 )}
