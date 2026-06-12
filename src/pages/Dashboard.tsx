@@ -429,7 +429,7 @@ export default function Dashboard() {
   const [searchParams, setSearchParams] = useSearchParams();
   const urlSessionId = searchParams.get("c");
 
-  const displayName = user?.display_name || user?.email?.split("@")[0] || "User";
+  const displayName = user?.display_name || user?.username || user?.email?.split("@")[0] || "User";
   const tokensUsed = totalTokens(messages);
   const accountName = displayName;
   const subtitle = displayName;

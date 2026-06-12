@@ -2,6 +2,7 @@ export interface User {
   id: string;
   email: string;
   display_name?: string | null;
+  username?: string | null;
   roles: string[];
   mfa_enabled: boolean;
   created_at: string;

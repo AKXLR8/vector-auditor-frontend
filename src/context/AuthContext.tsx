@@ -1,14 +1,16 @@
 import { createContext, useContext, useState, useEffect, useRef, type ReactNode } from "react";
 import type { User } from "../types";
 import * as authApi from "../api/auth";
-import client, { TOKEN_KEY, USER_KEY, DISPLAY_NAME_KEY } from "../api/client";
+import client, { TOKEN_KEY, DISPLAY_NAME_KEY } from "../api/client";
+
+const USERNAME_KEY = "user_username";
 
 interface AuthContextValue {
   user: User | null;
   token: string | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, firstName?: string, lastName?: string) => Promise<void>;
+  register: (email: string, password: string, firstName?: string, lastName?: string, username?: string) => Promise<void>;
   logout: () => Promise<void>;
   oauthLogin: (provider: "github", credential: string) => Promise<void>;
   isAuthenticated: boolean;
@@ -83,11 +85,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (loggingOutRef.current) return;
       loggingOutRef.current = false;
       localStorage.setItem(TOKEN_KEY, data.access_token);
+      if (data.display_name) localStorage.setItem(DISPLAY_NAME_KEY, data.display_name);
+      if (data.username) localStorage.setItem(USERNAME_KEY, data.username);
       setToken(data.access_token);
       expiryWarningShown.current = false;
     } catch {
       if (loggingOutRef.current) return;
-      // refresh failed — tokens will expire naturally, interceptor handles 401s
     }
   };
 
@@ -108,30 +111,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const parsed = parseToken(token);
       if (parsed) {
         const cachedName = localStorage.getItem(DISPLAY_NAME_KEY);
+        const cachedUsername = localStorage.getItem(USERNAME_KEY);
         const isUuid = (s: string) => /^[0-9a-f]{32}$/i.test(s);
         const isEmail = (s: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
         const subName = isUuid(parsed.sub) ? null : parsed.sub;
         const preferredName = parsed.preferred_username && !isUuid(parsed.preferred_username) && !isEmail(parsed.preferred_username) ? parsed.preferred_username : null;
         const display_name = cachedName || parsed.display_name || preferredName || subName || null;
+        const username = cachedUsername || preferredName || null;
         const email = !isUuid(parsed.sub) ? parsed.sub : null;
         setUser({
           id: parsed.sub,
           email: email || parsed.sub,
           display_name,
+          username,
           roles: parsed.roles,
           mfa_enabled: false,
           created_at: new Date().toISOString(),
         } as User);
         scheduleRefresh(parsed.exp);
-        /* try to fetch profile for a better display name (once) */
-        if (!localStorage.getItem(DISPLAY_NAME_KEY)) {
-          authApi.getProfile().then((profile) => {
-            if (profile.display_name && profile.display_name !== display_name) {
-              localStorage.setItem(DISPLAY_NAME_KEY, profile.display_name);
-              setUser((prev) => prev ? { ...prev, display_name: profile.display_name! } : prev);
-            }
-          }).catch(() => {});
-        }
       }
     }
     setLoading(false);
@@ -140,25 +137,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [token]);
 
-  const setTokenAndSchedule = (newToken: string) => {
+  const setTokenAndSchedule = (newToken: string, extra?: { username?: string | null; display_name?: string | null }) => {
     loggingOutRef.current = false;
     localStorage.setItem(TOKEN_KEY, newToken);
+    if (extra?.display_name) localStorage.setItem(DISPLAY_NAME_KEY, extra.display_name);
+    if (extra?.username) localStorage.setItem(USERNAME_KEY, extra.username);
     setToken(newToken);
     expiryWarningShown.current = false;
   };
 
   const login = async (email: string, password: string) => {
     const res = await authApi.login(email, password);
-    setTokenAndSchedule(res.access_token);
+    setTokenAndSchedule(res.access_token, { username: res.username, display_name: res.display_name });
   };
 
-  const register = async (email: string, password: string, firstName?: string, lastName?: string) => {
-    await authApi.register(email, password, firstName, lastName);
+  const register = async (email: string, password: string, firstName?: string, lastName?: string, username?: string) => {
+    await authApi.register(email, password, firstName, lastName, username);
   };
 
   const oauthLogin = async (provider: "github", credential: string) => {
     const res = await authApi.oauthGithub(credential);
-    setTokenAndSchedule(res.access_token);
+    setTokenAndSchedule(res.access_token, { username: res.username, display_name: res.display_name });
   };
 
   const logout = async () => {
@@ -174,7 +173,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     if (loggingOutRef.current) {
       localStorage.removeItem(TOKEN_KEY);
-      localStorage.removeItem(USER_KEY);
+      localStorage.removeItem(DISPLAY_NAME_KEY);
+      localStorage.removeItem(USERNAME_KEY);
       setToken(null);
       setUser(null);
       try {
