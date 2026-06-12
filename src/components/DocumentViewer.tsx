@@ -29,10 +29,12 @@ export default function DocumentViewer({ docId, citation, page: initialPage, onC
   const [pdfUrl, setPdfUrl] = useState<string | null>(cloudinaryUrl || null);
   const [resolving, setResolving] = useState(true);
   const [viewerMode, setViewerMode] = useState<"react-pdf" | "iframe" | "none">("react-pdf");
+  const pageViewport = useRef<{ width: number; height: number } | null>(null);
 
   useEffect(() => {
     setPageNumber(initialPage);
     setPageLoaded(false);
+    pageViewport.current = null;
   }, [initialPage, docId]);
 
   useEffect(() => {
@@ -87,47 +89,54 @@ export default function DocumentViewer({ docId, citation, page: initialPage, onC
     setNumPages(n);
   }, []);
 
-  const onPageLoadSuccess = useCallback(() => {
+  const onPageLoadSuccess = useCallback((page: any) => {
+    const vp = page.getViewport({ scale: 1 });
+    pageViewport.current = { width: vp.width, height: vp.height };
     setPageLoaded(true);
   }, []);
 
-  const highlightText = citation.quote;
-
-  const customTextRenderer = useCallback(
-    ({ str }: { str: string }) => {
-      if (!highlightText) return str;
-
-      const lower = str.toLowerCase();
-      const search = highlightText.toLowerCase();
-      const pos = lower.indexOf(search);
-
-      if (pos >= 0) {
-        const before = str.slice(0, pos);
-        const match = str.slice(pos, pos + search.length);
-        const after = str.slice(pos + search.length);
-        return `${before}<mark class="pdf-highlight">${match}</mark>${after}`;
-      }
-
-      const normStr = str.replace(/\s+/g, " ").trim();
-      const normQuote = highlightText.replace(/\s+/g, " ").trim();
-      if (
-        normStr.length > 3 &&
-        (normQuote.includes(normStr) || normStr.includes(normQuote))
-      ) {
-        return `<mark class="pdf-highlight">${str}</mark>`;
-      }
-
-      return str;
-    },
-    [highlightText],
-  );
+  const highlights = useMemo(() => {
+    if (!citation.bboxes || citation.bboxes.length === 0 || !pageViewport.current || !width) return [];
+    const { width: ptW, height: ptH } = pageViewport.current;
+    const renderedH = width * (ptH / ptW);
+    const scaleX = width / ptW;
+    const scaleY = renderedH / ptH;
+    return citation.bboxes.map(([x0, y0, x1, y1]) => ({
+      left: x0 * scaleX,
+      top: y0 * scaleY,
+      width: (x1 - x0) * scaleX,
+      height: (y1 - y0) * scaleY,
+    }));
+  }, [citation.bboxes, width]);
 
   const goToPage = (p: number) => {
     if (p >= 1 && p <= numPages) {
       setPageNumber(p);
       setPageLoaded(false);
+      pageViewport.current = null;
     }
   };
+
+  const renderOverlay = useMemo(() => {
+    if (highlights.length === 0) return null;
+    return (
+      <div className="absolute inset-0 pointer-events-none z-10">
+        {highlights.map((h, i) => (
+          <mark
+            key={i}
+            className="pdf-highlight"
+            style={{
+              position: "absolute",
+              left: h.left,
+              top: h.top,
+              width: h.width,
+              height: h.height,
+            }}
+          />
+        ))}
+      </div>
+    );
+  }, [highlights]);
 
   return (
     <aside className="h-full flex flex-col bg-[#000000]/80 backdrop-blur-xl">
@@ -202,17 +211,19 @@ export default function DocumentViewer({ docId, citation, page: initialPage, onC
               </div>
             }
           >
-            <Page
-              pageNumber={pageNumber}
-              width={width}
-              onLoadSuccess={onPageLoadSuccess}
-              customTextRenderer={customTextRenderer}
-              loading={
-                <div className="flex items-center justify-center py-20">
-                  <Spinner size={20} className="animate-spin text-[#6e7681]" />
-                </div>
-              }
-            />
+            <div className="relative inline-block">
+              <Page
+                pageNumber={pageNumber}
+                width={width}
+                onLoadSuccess={onPageLoadSuccess}
+                loading={
+                  <div className="flex items-center justify-center py-20">
+                    <Spinner size={20} className="animate-spin text-[#6e7681]" />
+                  </div>
+                }
+              />
+              {pageLoaded && renderOverlay}
+            </div>
           </Document>
         )}
 

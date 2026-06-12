@@ -23,6 +23,7 @@ export interface Citation {
   location: string;
   page?: number;
   document_id?: string;
+  bboxes?: number[][] | null;
 }
 
 export interface QueryResponse {
