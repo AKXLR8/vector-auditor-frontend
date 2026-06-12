@@ -17,7 +17,6 @@ import { ChatListSkeleton, DocListSkeleton, MessageSkeleton } from "../component
 import { FileDropZone } from "../components/FileDropZone";
 import { OnboardingEmpty } from "../components/OnboardingEmpty";
 import { ConfirmDialog } from "../components/ConfirmDialog";
-import { HeroVideo } from "../components/HeroVideo";
 import { useDebounce } from "../hooks/useDebounce";
 import { useSwipeGesture } from "../hooks/useSwipeGesture";
 import { useDocumentSync, type DocDiff } from "../hooks/useDocumentSync";
@@ -363,6 +362,7 @@ export default function Dashboard() {
     onSwipeLeft: () => { if (sidebarOpen) setSidebarOpen(false); },
     threshold: 60,
     enabled: isMobile && !hasOverlay,
+    edgeOnly: 40,
   });
 
   // Intercept browser back to close overlays before navigating
@@ -1703,21 +1703,17 @@ export default function Dashboard() {
 
       {/* ── Main Content ── */}
       <main className="flex-1 flex flex-col min-w-0 relative">
-        {/* Video Background (hero only, lazy-mounted after idle) */}
-        <AnimatePresence>
-          {showVideoBg && (
-            <motion.div
-              key="hero-video"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0, transition: { duration: 0.5, ease: "easeInOut" } }}
-              className="absolute inset-0 z-0"
-            >
-              <HeroVideo />
-            </motion.div>
-          )}
-        </AnimatePresence>
-        {/* Futuristic background layers */}
+        {/* Static background gradient (no video — mobile perf) */}
+        <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+          <div
+            className="w-full h-full"
+            style={{
+              background:
+                "radial-gradient(ellipse at 50% 35%, rgba(30,58,95,0.55) 0%, rgba(7,14,13,0.0) 60%), linear-gradient(180deg, #070E0D 0%, #050A0A 100%)",
+            }}
+          />
+        </div>
+        {/* Animated glow blobs */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
           <div className="absolute -top-40 -right-40 w-[800px] h-[800px] rounded-full bg-[#3B82F6] opacity-[0.04]"
                style={{ filter: "blur(120px)" }} />

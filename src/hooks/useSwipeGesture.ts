@@ -5,6 +5,7 @@ interface SwipeOptions {
   onSwipeLeft?: () => void;
   threshold?: number;
   enabled?: boolean;
+  edgeOnly?: number;
 }
 
 export function useSwipeGesture({
@@ -12,6 +13,7 @@ export function useSwipeGesture({
   onSwipeLeft,
   threshold = 50,
   enabled = true,
+  edgeOnly,
 }: SwipeOptions) {
   const touchStart = useRef<{ x: number; y: number } | null>(null);
   const touchEnd = useRef<{ x: number; y: number } | null>(null);
@@ -19,13 +21,12 @@ export function useSwipeGesture({
   const onTouchStart = useCallback(
     (e: TouchEvent) => {
       if (!enabled) return;
+      const x = e.targetTouches[0].clientX;
+      if (edgeOnly !== undefined && x > edgeOnly) return;
       touchEnd.current = null;
-      touchStart.current = {
-        x: e.targetTouches[0].clientX,
-        y: e.targetTouches[0].clientY,
-      };
+      touchStart.current = { x, y: e.targetTouches[0].clientY };
     },
-    [enabled]
+    [enabled, edgeOnly]
   );
 
   const onTouchMove = useCallback(
