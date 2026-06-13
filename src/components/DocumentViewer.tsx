@@ -96,19 +96,52 @@ export default function DocumentViewer({ docId, citation, page: initialPage, onC
     setPageLoaded(true);
   }, []);
 
+  const useBboxHighlight = citation.bboxes && citation.bboxes.length > 0;
+
   const highlights = useMemo(() => {
-    if (!citation.bboxes || citation.bboxes.length === 0 || !pageViewport.current || !width) return [];
+    if (!useBboxHighlight || !pageViewport.current || !width) return [];
     const { width: ptW, height: ptH } = pageViewport.current;
     const renderedH = width * (ptH / ptW);
     const scaleX = width / ptW;
     const scaleY = renderedH / ptH;
-    return citation.bboxes.map(([x0, y0, x1, y1]) => ({
+    return citation.bboxes!.map(([x0, y0, x1, y1]) => ({
       left: x0 * scaleX,
       top: y0 * scaleY,
       width: (x1 - x0) * scaleX,
       height: (y1 - y0) * scaleY,
     }));
-  }, [citation.bboxes, width]);
+  }, [citation.bboxes, useBboxHighlight, width]);
+
+  const highlightText = citation.quote;
+
+  const customTextRenderer = useCallback(
+    ({ str }: { str: string }) => {
+      if (useBboxHighlight || !highlightText) return str;
+
+      const lower = str.toLowerCase();
+      const search = highlightText.toLowerCase();
+      const pos = lower.indexOf(search);
+
+      if (pos >= 0) {
+        const before = str.slice(0, pos);
+        const match = str.slice(pos, pos + search.length);
+        const after = str.slice(pos + search.length);
+        return `${before}<mark class="pdf-highlight">${match}</mark>${after}`;
+      }
+
+      const normStr = str.replace(/\s+/g, " ").trim();
+      const normQuote = highlightText.replace(/\s+/g, " ").trim();
+      if (
+        normStr.length > 3 &&
+        (normQuote.includes(normStr) || normStr.includes(normQuote))
+      ) {
+        return `<mark class="pdf-highlight">${str}</mark>`;
+      }
+
+      return str;
+    },
+    [highlightText, useBboxHighlight],
+  );
 
   const goToPage = (p: number) => {
     if (p >= 1 && p <= numPages) {
@@ -138,8 +171,6 @@ export default function DocumentViewer({ docId, citation, page: initialPage, onC
       </div>
     );
   }, [highlights]);
-
-  const hasBboxes = citation.bboxes && citation.bboxes.length > 0;
 
   return (
     <>
@@ -246,6 +277,7 @@ export default function DocumentViewer({ docId, citation, page: initialPage, onC
                   pageNumber={pageNumber}
                   width={width}
                   onLoadSuccess={onPageLoadSuccess}
+                  customTextRenderer={customTextRenderer}
                   loading={
                     <div className="flex items-center justify-center py-20">
                       <Spinner size={20} className="animate-spin text-[#6e7681]" />
