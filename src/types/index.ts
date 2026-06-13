@@ -16,6 +16,14 @@ export interface QueryRequest {
   conversation_history?: { role: "user" | "assistant"; content: string }[];
   mode?: QueryMode;
   max_citations?: number;
+  profile?: string;
+}
+
+export interface LmProfile {
+  id: string;
+  name: string;
+  provider?: string;
+  description?: string;
 }
 
 export interface Citation {

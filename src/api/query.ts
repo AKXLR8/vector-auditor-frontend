@@ -6,6 +6,7 @@ import type {
   FeedbackRequest,
   StreamEvent,
   DocumentAnalysis,
+  LmProfile,
 } from "../types";
 
 export class StreamAbortError extends Error {
@@ -13,6 +14,11 @@ export class StreamAbortError extends Error {
     super("aborted");
     this.name = "StreamAbortError";
   }
+}
+
+export async function listProfiles(): Promise<LmProfile[]> {
+  const { data } = await client.get("/llm/profiles");
+  return data?.profiles ?? [];
 }
 
 export async function sendQuery(req: QueryRequest): Promise<QueryResponse> {

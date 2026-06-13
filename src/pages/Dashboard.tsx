@@ -23,7 +23,7 @@ import { useDocumentSync, type DocDiff } from "../hooks/useDocumentSync";
 import { useKeyboardShortcuts } from "../hooks/useKeyboardShortcuts";
 import { useLocalStorage } from "../hooks/useLocalStorage";
 import { errorMessage } from "../lib/errors";
-import { sendQuery, streamQuery, submitFeedback, StreamAbortError } from "../api/query";
+import { sendQuery, streamQuery, submitFeedback, StreamAbortError, listProfiles } from "../api/query";
 import { uploadDocuments, getDocument, deleteDocument } from "../api/documents";
 import { getUploadProgress } from "../api/uploads";
 import { getApiBaseUrl } from "../api/config";
@@ -38,7 +38,7 @@ import {
 } from "../api/sessions";
 import type {
   Document, Message, Citation, DocGroup,
-  ChatSession as ServerSession, LocalSession, QueryMode,
+  ChatSession as ServerSession, LocalSession, QueryMode, LmProfile,
 } from "../types";
 import {
   PaperPlaneRight, Plus, FileText, X,
@@ -313,6 +313,17 @@ export default function Dashboard() {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [queryMode, setQueryMode] = useLocalStorage<QueryMode>("query_mode", "white_box");
   const [maxCitations, setMaxCitations] = useLocalStorage<number>("query_max_citations", 5);
+  const [profiles, setProfiles] = useState<LmProfile[]>([]);
+  const [activeProfile, setActiveProfile] = useLocalStorage<string>("active_profile", "");
+
+  useEffect(() => {
+    listProfiles().then((p) => {
+      setProfiles(p);
+      if (p.length > 0 && !activeProfile) {
+        setActiveProfile(p[0].id);
+      }
+    }).catch(() => {});
+  }, []);
 
   const messagesEnd = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -946,6 +957,7 @@ export default function Dashboard() {
         document_ids: selectedDocs.size > 0 ? Array.from(selectedDocs) : undefined,
         conversation_history: historyMessages.slice(-10),
         mode: queryMode,
+        profile: activeProfile || undefined,
         max_citations: maxCitations,
       };
 
@@ -1840,24 +1852,6 @@ export default function Dashboard() {
                                         </span>
                                       )}
                                     </div>
-                                    {msg.citations && msg.citations.length > 0 && (
-                                      <div className="mt-3 flex flex-col sm:flex-row sm:flex-wrap gap-1.5">
-                                        {msg.citations.map((c, i) => (
-                                          <motion.button key={i}
-                                            initial={{ opacity: 0, scale: 0.9 }}
-                                            animate={{ opacity: 1, scale: 1 }}
-                                            transition={{ delay: i * 0.04 }}
-                                            onClick={() => handleCitationClick(c)}
-                                            className="inline-flex items-center gap-1.5 text-[11px] text-[#9DAFAC] hover:text-[#3B82F6] transition-colors py-1.5 px-2.5 rounded-full bg-white/[0.04] hover:bg-[#3B82F6]/10 ring-1 ring-white/[0.06] hover:ring-[#3B82F6]/30 w-full sm:w-auto"
-                                          >
-                                            <Quotes size={10} className="shrink-0" />
-                                            <span className="font-mono shrink-0">[{i + 1}]</span>
-                                            <span className="truncate min-w-0 flex-1 sm:max-w-[160px]">{c.source}</span>
-                                            {c.page && c.page > 0 && <span className="text-[10px] text-[#9DAFAC] shrink-0 ml-auto">p.{c.page}</span>}
-                                          </motion.button>
-                                        ))}
-                                      </div>
-                                    )}
                                     {msg.reasoning_path && msg.reasoning_path.length > 0 && msg.mode !== "black_box" && (
                                       <details className="mt-3 text-xs text-[#9DAFAC]/70">
                                         <summary className="cursor-pointer hover:text-[#9DAFAC] flex items-center gap-1.5">
@@ -2134,6 +2128,9 @@ export default function Dashboard() {
                           onModeChange={setQueryMode}
                           maxCitations={maxCitations}
                           onMaxCitationsChange={setMaxCitations}
+                          profiles={profiles}
+                          activeProfile={activeProfile}
+                          onProfileChange={setActiveProfile}
                           disabled={loading}
                         />
                       }
