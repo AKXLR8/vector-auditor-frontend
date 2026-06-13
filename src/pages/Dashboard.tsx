@@ -44,7 +44,7 @@ import {
   PaperPlaneRight, Plus, FileText, X,
   ThumbsUp, ThumbsDown, User, SignOut,
   Spinner, Robot, WarningCircle, ChatText,
-  Quotes, MagnifyingGlass, House,
+  MagnifyingGlass, House,
   Folder, PushPin, PencilSimple, Check, XCircle,
   Command, Sparkle, List,
 } from "@phosphor-icons/react";
@@ -180,10 +180,7 @@ function saveActiveId(userId: string, id: string | null) {
 function enrichCitations(content: string): string {
   return content.replace(
     /【(\d+)(?:†[^】]*)?】|\[(\d+)\]/g,
-    (_match, jpIdx, bracketIdx) => {
-      const idx = jpIdx || bracketIdx;
-      return `<sup class="cit-chip" data-idx="${idx}"><button type="button" class="cit-chip-btn" aria-label="Open citation ${idx}">[${idx}]</button></sup>`;
-    }
+    ""
   );
 }
 
@@ -2224,3 +2221,4 @@ export default function Dashboard() {
     </div>
   );
 }
+
