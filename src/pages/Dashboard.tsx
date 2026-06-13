@@ -23,7 +23,7 @@ import { useDocumentSync, type DocDiff } from "../hooks/useDocumentSync";
 import { useKeyboardShortcuts } from "../hooks/useKeyboardShortcuts";
 import { useLocalStorage } from "../hooks/useLocalStorage";
 import { errorMessage } from "../lib/errors";
-import { sendQuery, streamQuery, submitFeedback, StreamAbortError, listProfiles } from "../api/query";
+import { sendQuery, streamQuery, submitFeedback, StreamAbortError } from "../api/query";
 import { uploadDocuments, getDocument, deleteDocument } from "../api/documents";
 import { getUploadProgress } from "../api/uploads";
 import { getApiBaseUrl } from "../api/config";
@@ -38,7 +38,7 @@ import {
 } from "../api/sessions";
 import type {
   Document, Message, Citation, DocGroup,
-  ChatSession as ServerSession, LocalSession, QueryMode, LmProfile,
+  ChatSession as ServerSession, LocalSession, QueryMode,
 } from "../types";
 import {
   PaperPlaneRight, Plus, FileText, X,
@@ -310,17 +310,6 @@ export default function Dashboard() {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [queryMode, setQueryMode] = useLocalStorage<QueryMode>("query_mode", "white_box");
   const [maxCitations, setMaxCitations] = useLocalStorage<number>("query_max_citations", 5);
-  const [profiles, setProfiles] = useState<LmProfile[]>([]);
-  const [activeProfile, setActiveProfile] = useLocalStorage<string>("active_profile", "");
-
-  useEffect(() => {
-    listProfiles().then((p) => {
-      setProfiles(p);
-      if (p.length > 0 && !activeProfile) {
-        setActiveProfile(p[0].id);
-      }
-    }).catch(() => {});
-  }, []);
 
   const messagesEnd = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -954,7 +943,7 @@ export default function Dashboard() {
         document_ids: selectedDocs.size > 0 ? Array.from(selectedDocs) : undefined,
         conversation_history: historyMessages.slice(-10),
         mode: queryMode,
-        profile: activeProfile || undefined,
+        profile: "minimx-m3",
         max_citations: maxCitations,
       };
 
@@ -2125,9 +2114,6 @@ export default function Dashboard() {
                           onModeChange={setQueryMode}
                           maxCitations={maxCitations}
                           onMaxCitationsChange={setMaxCitations}
-                          profiles={profiles}
-                          activeProfile={activeProfile}
-                          onProfileChange={setActiveProfile}
                           disabled={loading}
                         />
                       }

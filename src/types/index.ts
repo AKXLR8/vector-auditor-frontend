@@ -19,13 +19,6 @@ export interface QueryRequest {
   profile?: string;
 }
 
-export interface LmProfile {
-  id: string;
-  name: string;
-  provider?: string;
-  description?: string;
-}
-
 export interface Citation {
   quote: string;
   source: string;
