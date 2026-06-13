@@ -29,13 +29,10 @@ export default function DocumentViewer({ docId, citation, page: initialPage, onC
   const [pdfUrl, setPdfUrl] = useState<string | null>(cloudinaryUrl || null);
   const [resolving, setResolving] = useState(true);
   const [viewerMode, setViewerMode] = useState<"react-pdf" | "iframe" | "none">("react-pdf");
-  const pageViewport = useRef<{ width: number; height: number } | null>(null);
-  const pageWrapperRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setPageNumber(initialPage);
     setPageLoaded(false);
-    pageViewport.current = null;
   }, [initialPage, docId]);
 
   useEffect(() => {
@@ -90,27 +87,25 @@ export default function DocumentViewer({ docId, citation, page: initialPage, onC
     setNumPages(n);
   }, []);
 
-  const onPageLoadSuccess = useCallback((page: any) => {
-    const vp = page.getViewport({ scale: 1 });
-    pageViewport.current = { width: vp.width, height: vp.height };
+  const onPageLoadSuccess = useCallback(() => {
     setPageLoaded(true);
   }, []);
 
-  const useBboxHighlight = citation.bboxes && citation.bboxes.length > 0;
+  const useBboxHighlight = citation.bboxes && citation.bboxes.length > 0
+    && typeof citation.page_width === "number" && typeof citation.page_height === "number";
 
   const highlights = useMemo(() => {
-    if (!useBboxHighlight || !pageViewport.current || !width) return [];
-    const { width: ptW, height: ptH } = pageViewport.current;
-    const renderedH = width * (ptH / ptW);
-    const scaleX = width / ptW;
-    const scaleY = renderedH / ptH;
+    if (!useBboxHighlight || !width) return [];
+    const ptW = citation.page_width!;
+    const ptH = citation.page_height!;
+    const scale = width / ptW;
     return citation.bboxes!.map(([x0, y0, x1, y1]) => ({
-      left: x0 * scaleX,
-      top: y0 * scaleY,
-      width: (x1 - x0) * scaleX,
-      height: (y1 - y0) * scaleY,
+      left: x0 * scale,
+      top: y0 * scale,
+      width: (x1 - x0) * scale,
+      height: (y1 - y0) * scale,
     }));
-  }, [citation.bboxes, useBboxHighlight, width]);
+  }, [citation.bboxes, citation.page_width, citation.page_height, useBboxHighlight, width]);
 
   const highlightText = citation.quote;
 
@@ -147,7 +142,6 @@ export default function DocumentViewer({ docId, citation, page: initialPage, onC
     if (p >= 1 && p <= numPages) {
       setPageNumber(p);
       setPageLoaded(false);
-      pageViewport.current = null;
     }
   };
 
@@ -272,7 +266,7 @@ export default function DocumentViewer({ docId, citation, page: initialPage, onC
                 </div>
               }
             >
-              <div ref={pageWrapperRef} className="relative inline-block mx-auto">
+              <div className="relative inline-block mx-auto">
                 <Page
                   pageNumber={pageNumber}
                   width={width}

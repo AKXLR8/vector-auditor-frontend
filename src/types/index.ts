@@ -25,6 +25,8 @@ export interface Citation {
   page?: number;
   document_id?: string;
   bboxes?: number[][] | null;
+  page_width?: number | null;
+  page_height?: number | null;
 }
 
 export interface QueryResponse {
