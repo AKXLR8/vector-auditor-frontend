@@ -44,7 +44,7 @@ import {
   PaperPlaneRight, Plus, FileText, X,
   ThumbsUp, ThumbsDown, User, SignOut,
   Spinner, Robot, WarningCircle, ChatText,
-  MagnifyingGlass, House,
+  Quotes, MagnifyingGlass, House,
   Folder, PushPin, PencilSimple, Check, XCircle,
   Command, Sparkle, List,
 } from "@phosphor-icons/react";
@@ -180,7 +180,10 @@ function saveActiveId(userId: string, id: string | null) {
 function enrichCitations(content: string): string {
   return content.replace(
     /【(\d+)(?:†[^】]*)?】|\[(\d+)\]/g,
-    ""
+    (_, n1, n2) => {
+      const idx = parseInt(n1 || n2, 10);
+      return `<sup class="cit-chip" data-idx="${idx}"><button type="button" class="cit-chip-btn" aria-label="Open citation ${idx}">[${idx}]</button></sup>`;
+    }
   );
 }
 
@@ -310,6 +313,7 @@ export default function Dashboard() {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [queryMode, setQueryMode] = useLocalStorage<QueryMode>("query_mode", "white_box");
   const [maxCitations, setMaxCitations] = useLocalStorage<number>("query_max_citations", 5);
+  const [activeModel, setActiveModel] = useLocalStorage<string>("active_model", "mercury-2");
 
   const messagesEnd = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -943,7 +947,7 @@ export default function Dashboard() {
         document_ids: selectedDocs.size > 0 ? Array.from(selectedDocs) : undefined,
         conversation_history: historyMessages.slice(-10),
         mode: queryMode,
-        profile: "minimx-m3",
+        profile: activeModel,
         max_citations: maxCitations,
       };
 
@@ -2114,6 +2118,8 @@ export default function Dashboard() {
                           onModeChange={setQueryMode}
                           maxCitations={maxCitations}
                           onMaxCitationsChange={setMaxCitations}
+                          model={activeModel}
+                          onModelChange={setActiveModel}
                           disabled={loading}
                         />
                       }
