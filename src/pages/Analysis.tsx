@@ -36,6 +36,7 @@ export default function Analysis() {
   const [focusTopic, setFocusTopic] = useLocalStorage<string>(FOCUS_KEY, "");
   const [maxCitations, setMaxCitations] = useLocalStorage<number>("query_max_citations", 20);
 
+  const [activeModel] = useLocalStorage<string>("active_model", "mercury");
   const [result, setResult] = useLocalStorage<DocumentAnalysis | null>(scopedKey(RESULT_KEY_PREFIX, uid), null);
   const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -113,9 +114,10 @@ export default function Analysis() {
         selectedIds.length === 0 || selectedIds.length >= readyDocs.length
           ? allIds
           : selectedIds.filter((id) => allIds.includes(id));
-      const body: { question?: string; document_ids: string[]; max_citations?: number } = {
+      const body: { question?: string; document_ids: string[]; max_citations?: number; model?: string } = {
         document_ids: docIds,
         max_citations: maxCitations,
+        model: activeModel,
       };
       const trimmedFocus = focusTopic.trim();
       if (trimmedFocus) body.question = trimmedFocus;

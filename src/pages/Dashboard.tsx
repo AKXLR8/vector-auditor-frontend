@@ -955,7 +955,7 @@ export default function Dashboard() {
         document_ids: selectedDocs.size > 0 ? Array.from(selectedDocs) : undefined,
         conversation_history: historyMessages.slice(-10),
         mode: queryMode,
-        profile: activeModelRef.current,
+        model: activeModelRef.current,
         max_citations: maxCitations,
       };
 

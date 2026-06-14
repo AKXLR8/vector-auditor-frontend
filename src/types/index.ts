@@ -16,7 +16,7 @@ export interface QueryRequest {
   conversation_history?: { role: "user" | "assistant"; content: string }[];
   mode?: QueryMode;
   max_citations?: number;
-  profile?: string;
+  model?: string;
 }
 
 export interface Citation {
