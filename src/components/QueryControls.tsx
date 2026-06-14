@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { Brain, Lightning, CaretDown, Check, Robot } from "@phosphor-icons/react";
+import { fetchProfiles, type LmProfile } from "../api/profiles";
 import type { QueryMode } from "../types";
 
 interface ModeOption {
@@ -26,11 +27,6 @@ const MODE_OPTIONS: ModeOption[] = [
   },
 ];
 
-const MODEL_OPTIONS = [
-  { id: "mercury", label: "Mercury 2" },
-  { id: "minimax", label: "Minimax M3 (NVIDIA)" },
-];
-
 interface Props {
   mode: QueryMode;
   onModeChange: (m: QueryMode) => void;
@@ -45,6 +41,7 @@ function getRectAbove(el: HTMLElement) {
 }
 
 export function QueryControls({ mode, onModeChange, model, onModelChange, disabled }: Props) {
+  const [profiles, setProfiles] = useState<LmProfile[]>([]);
   const [open, setOpen] = useState(false);
   const [modelOpen, setModelOpen] = useState(false);
   const [pos, setPos] = useState({ left: 0, bottom: 0, minWidth: 180 });
@@ -53,6 +50,17 @@ export function QueryControls({ mode, onModeChange, model, onModelChange, disabl
   const modelTriggerRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
   const modelPopoverRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    fetchProfiles()
+      .then(setProfiles)
+      .catch(() => {
+        setProfiles([
+          { key: "mercury", name: "Mercury 2", model: "mercury-2", base_url: "" },
+          { key: "minimax", name: "Minimax M3 (NVIDIA)", model: "minimaxai/minimax-m3", base_url: "" },
+        ]);
+      });
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -86,7 +94,7 @@ export function QueryControls({ mode, onModeChange, model, onModelChange, disabl
 
   const current = MODE_OPTIONS.find((o) => o.value === mode) ?? MODE_OPTIONS[0];
   const CurrentIcon = current.icon;
-  const currentModel = MODEL_OPTIONS.find((o) => o.id === model) ?? MODEL_OPTIONS[0];
+  const currentProfile = profiles.find((p) => p.key === model) ?? profiles[0];
 
   const dropdownTransition = {
     type: "spring" as const,
@@ -141,7 +149,7 @@ export function QueryControls({ mode, onModeChange, model, onModelChange, disabl
           } ${disabled ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}`}
         >
           <Robot size={11} weight="bold" className="text-[#60A5FA]" />
-          <span>{currentModel.label}</span>
+          <span>{currentProfile?.name ?? model}</span>
           <CaretDown size={9} weight="bold" className={`transition-transform duration-200 ${modelOpen ? "rotate-180" : ""}`} />
         </button>
       </div>
@@ -187,7 +195,7 @@ export function QueryControls({ mode, onModeChange, model, onModelChange, disabl
 
       {createPortal(
         <AnimatePresence>
-          {modelOpen && (
+          {modelOpen && profiles.length > 0 && (
             <motion.div
               ref={modelPopoverRef}
               role="listbox"
@@ -198,18 +206,18 @@ export function QueryControls({ mode, onModeChange, model, onModelChange, disabl
               style={{ position: "fixed", left: modelPos.left, bottom: modelPos.bottom, minWidth: modelPos.minWidth, zIndex: 9999 }}
               className="bg-[#0d0d10] border border-white/10 rounded-xl shadow-2xl shadow-black/60 overflow-hidden origin-bottom-left"
             >
-              {MODEL_OPTIONS.map((opt) => {
-                const selected = opt.id === model;
+              {profiles.map((p) => {
+                const selected = p.key === model;
                 return (
                   <button
-                    key={opt.id}
+                    key={p.key}
                     role="option"
                     aria-selected={selected}
-                    onClick={() => { onModelChange(opt.id); setModelOpen(false); }}
+                    onClick={() => { onModelChange(p.key); setModelOpen(false); }}
                     className={`w-full flex items-center gap-2.5 px-3 py-2 text-left transition-colors ${selected ? "bg-[#3B82F6]/10" : "hover:bg-white/[0.05]"}`}
                   >
                     <Robot size={14} weight="bold" className="shrink-0 text-[#60A5FA]" />
-                    <span className="text-xs font-semibold text-white flex-1">{opt.label}</span>
+                    <span className="text-xs font-semibold text-white flex-1">{p.name}</span>
                     {selected && <Check size={12} weight="bold" className="text-[#3B82F6] shrink-0" />}
                   </button>
                 );
