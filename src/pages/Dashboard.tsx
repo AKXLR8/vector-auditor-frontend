@@ -1448,14 +1448,7 @@ export default function Dashboard() {
             <Plus size={15} weight="bold" />
             New Chat
           </button>
-          <Link
-            to="/analysis"
-            onClick={() => { if (isMobile) setSidebarOpen(false); }}
-            className="w-full flex items-center gap-2 h-9 px-3 rounded-xl text-xs font-medium text-white/70 hover:text-white hover:bg-white/[0.05] transition-[colors] duration-200"
-          >
-            <Sparkle size={13} weight="bold" className="text-[#60A5FA]" />
-            Analysis
-          </Link>
+
         </div>
 
         <div className="px-3 py-2 shrink-0">

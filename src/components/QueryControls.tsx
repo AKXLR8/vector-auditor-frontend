@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { Brain, Lightning, CaretDown, Check, Robot } from "@phosphor-icons/react";
+import { useNavigate } from "react-router-dom";
+import { Brain, Lightning, CaretDown, Check, Robot, Sparkle } from "@phosphor-icons/react";
 import { fetchProfiles, type LmProfile } from "../api/profiles";
 import type { QueryMode } from "../types";
 
@@ -41,6 +42,7 @@ function getRectAbove(el: HTMLElement) {
 }
 
 export function QueryControls({ mode, onModeChange, model, onModelChange, disabled }: Props) {
+  const navigate = useNavigate();
   const [profiles, setProfiles] = useState<LmProfile[]>([]);
   const [open, setOpen] = useState(false);
   const [modelOpen, setModelOpen] = useState(false);
@@ -153,6 +155,16 @@ export function QueryControls({ mode, onModeChange, model, onModelChange, disabl
           <CaretDown size={9} weight="bold" className={`transition-transform duration-200 ${modelOpen ? "rotate-180" : ""}`} />
         </button>
       </div>
+
+      <button
+        type="button"
+        onClick={() => navigate("/analysis")}
+        title="Open document analysis"
+        className="inline-flex items-center gap-1 h-7 px-2 rounded-lg text-[11px] font-medium transition-all border bg-white/[0.03] border-white/[0.06] text-white/80 hover:bg-white/[0.06] hover:border-white/[0.1] cursor-pointer"
+      >
+        <Sparkle size={11} weight="bold" className="text-[#60A5FA]" />
+        <span className="hidden sm:inline">Analysis</span>
+      </button>
 
       {createPortal(
         <AnimatePresence>
