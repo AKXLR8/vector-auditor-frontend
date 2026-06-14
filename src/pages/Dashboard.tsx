@@ -321,6 +321,8 @@ export default function Dashboard() {
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const messagesRef = useRef(messages);
   messagesRef.current = messages;
+  const activeModelRef = useRef(activeModel);
+  activeModelRef.current = activeModel;
   const fileInput = useRef<HTMLInputElement>(null);
   const streamContentRef = useRef<Map<string, string>>(new Map());
   const handleCitationClickRef = useRef<(c: Citation) => void>(() => {});
@@ -949,7 +951,7 @@ export default function Dashboard() {
         document_ids: selectedDocs.size > 0 ? Array.from(selectedDocs) : undefined,
         conversation_history: historyMessages.slice(-10),
         mode: queryMode,
-        profile: activeModel,
+        profile: activeModelRef.current,
         max_citations: maxCitations,
       };
 

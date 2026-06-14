@@ -28,7 +28,7 @@ const MODE_OPTIONS: ModeOption[] = [
 
 const MODEL_OPTIONS = [
   { id: "mercury-2", label: "Mercury-2" },
-  { id: "minimx-m3", label: "Minimax-m3" },
+  { id: "minimax-m3", label: "Minimax-m3" },
 ];
 
 interface Props {
