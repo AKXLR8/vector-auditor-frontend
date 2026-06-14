@@ -19,9 +19,10 @@ import type { Document, DocumentAnalysis, Citation } from "../types";
 
 const FOCUS_KEY = "analysis_focus_topic";
 const SELECTION_KEY_PREFIX = "analysis_doc_selection_";
+const RESULT_KEY_PREFIX = "analysis_result_";
 
-function selectionKey(uid: string) {
-  return `${SELECTION_KEY_PREFIX}${uid || "anon"}`;
+function scopedKey(prefix: string, uid: string) {
+  return `${prefix}${uid || "anon"}`;
 }
 
 export default function Analysis() {
@@ -31,11 +32,11 @@ export default function Analysis() {
 
   const [docs, setDocs] = useState<Document[]>([]);
   const [docsLoading, setDocsLoading] = useState(true);
-  const [selectedIds, setSelectedIds] = useLocalStorage<string[]>(selectionKey(uid), []);
+  const [selectedIds, setSelectedIds] = useLocalStorage<string[]>(scopedKey(SELECTION_KEY_PREFIX, uid), []);
   const [focusTopic, setFocusTopic] = useLocalStorage<string>(FOCUS_KEY, "");
   const [maxCitations, setMaxCitations] = useLocalStorage<number>("query_max_citations", 20);
 
-  const [result, setResult] = useLocalStorage<DocumentAnalysis | null>("analysis_result", null);
+  const [result, setResult] = useLocalStorage<DocumentAnalysis | null>(scopedKey(RESULT_KEY_PREFIX, uid), null);
   const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeCitation, setActiveCitation] = useState<{ c: Citation; docId: string } | null>(null);

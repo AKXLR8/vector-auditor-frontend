@@ -51,17 +51,21 @@ import {
   Command, Sparkle, List,
 } from "@phosphor-icons/react";
 
-const GROUPS_KEY = "vector_doc_groups";
+const GROUPS_KEY_PREFIX = "vector_doc_groups_";
 const PINNED_KEY_PREFIX = "pinned_sessions_";
 const DOCS_CACHE_PREFIX = "vector_docs_cache_";
 
-function loadGroups(): DocGroup[] {
-  try { const raw = localStorage.getItem(GROUPS_KEY); if (raw) return JSON.parse(raw); } catch { }
+function groupsKey(uid: string) {
+  return `${GROUPS_KEY_PREFIX}${uid || "anon"}`;
+}
+
+function loadGroups(uid: string): DocGroup[] {
+  try { const raw = localStorage.getItem(groupsKey(uid)); if (raw) return JSON.parse(raw); } catch { }
   return [];
 }
 
-function saveGroups(groups: DocGroup[]) {
-  try { localStorage.setItem(GROUPS_KEY, JSON.stringify(groups)); } catch { }
+function saveGroups(uid: string, groups: DocGroup[]) {
+  try { localStorage.setItem(groupsKey(uid), JSON.stringify(groups)); } catch { }
 }
 
 function docsCacheKey(userId: string) {
@@ -290,7 +294,7 @@ export default function Dashboard() {
   const [docsLoading, setDocsLoading] = useState(true);
   const [selectedDocs, setSelectedDocs] = useState<Set<string>>(new Set());
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
-  const [docGroups, setDocGroups] = useState<DocGroup[]>(loadGroups);
+  const [docGroups, setDocGroups] = useState<DocGroup[]>(() => loadGroups(uid));
   const [selectedGroups, setSelectedGroups] = useState<Set<string>>(new Set());
   const [sidebarDragOverGroup, setSidebarDragOverGroup] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(
@@ -520,7 +524,7 @@ export default function Dashboard() {
   }, [refetch]);
 
   // Persist groups to localStorage
-  useEffect(() => { saveGroups(docGroups); }, [docGroups]);
+  useEffect(() => { if (uid) saveGroups(uid, docGroups); }, [uid, docGroups]);
 
   // Persist docs to localStorage cache
   useEffect(() => { if (uid) saveCachedDocs(uid, docs); }, [uid, docs]);
@@ -1502,7 +1506,14 @@ export default function Dashboard() {
                 <FileText size={14} /> Documents <span className="font-normal text-xs text-[#9DAFAC]/40">{docsLoading ? <Spinner size={10} className="animate-spin inline" /> : `(${dedupedDocs.length})`}</span>
               </button>
               {dedupedDocs.length > 0 && (
-                <div className="flex gap-2">
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => fileInput.current?.click()}
+                    title="Upload document"
+                    className="w-6 h-6 rounded-md hover:bg-white/[0.06] flex items-center justify-center text-[#9DAFAC]/50 hover:text-[#9DAFAC]/80 transition-colors"
+                  >
+                    <FileText size={12} />
+                  </button>
                   <button onClick={() => setSelectedDocs(new Set(dedupedDocs.map((d) => d.document_id ?? d.id)))}
                     className="text-[10px] text-[#3B82F6]/70 hover:text-[#3B82F6] transition-colors">All</button>
                   <button onClick={() => setSelectedDocs(new Set())}
@@ -2099,9 +2110,10 @@ export default function Dashboard() {
                                   <button
                                     onClick={() => { fileInput.current?.click(); setPlusOpen(false); }}
                                     className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-white/[0.06] text-xs text-white/70 hover:text-white transition-colors text-left"
+                                    title="Upload document"
                                   >
                                     <FileText size={13} />
-                                    Upload Document
+                                    {dedupedDocs.length === 0 ? "Upload Document" : "Upload"}
                                   </button>
                                   <button
                                     onClick={() => { setActivePanel("documents"); setPlusOpen(false); }}
