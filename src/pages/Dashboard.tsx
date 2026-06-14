@@ -5,6 +5,8 @@ import toast from "react-hot-toast";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
+import rehypePrism from "rehype-prism-plus";
+import "prismjs/themes/prism-tomorrow.css";
 import { useAuth } from "../context/AuthContext";
 import DocumentViewer from "../components/DocumentViewer";
 import DocumentsPanel from "../components/DocumentsPanel";
@@ -216,7 +218,7 @@ function DiffusingMarkdown({ content, streaming }: { content: string; streaming:
   if (!streaming) {
     lastLen.current = 0;
     return (
-      <Markdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={components}>
+      <Markdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypePrism, rehypeRaw]} components={components}>
         {enrichCitations(content)}
       </Markdown>
     );
@@ -228,13 +230,13 @@ function DiffusingMarkdown({ content, streaming }: { content: string; streaming:
   return (
     <>
       {oldText && (
-        <Markdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={components}>
+        <Markdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypePrism, rehypeRaw]} components={components}>
           {enrichCitations(oldText)}
         </Markdown>
       )}
       {newText && (
         <span className="diffuse-in">
-          <Markdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={components}>
+          <Markdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypePrism, rehypeRaw]} components={components}>
             {enrichCitations(newText)}
           </Markdown>
         </span>
@@ -253,11 +255,11 @@ const components: any = {
   li: ({ children, ...props }: any) => <li {...props} className="text-sm">{children}</li>,
   code: ({ children, className, ...props }: any) =>
     className ? (
-      <code {...props} className="block bg-[#000000] border border-[#102321] rounded-lg p-3 text-xs font-mono overflow-x-auto mb-3">{children}</code>
+      <code {...props} className={className + " text-xs leading-relaxed font-mono block"}>{children}</code>
     ) : (
       <code {...props} className="bg-[#0D1C1A] px-1.5 py-0.5 rounded text-xs font-mono text-[#3B82F6]">{children}</code>
     ),
-  pre: ({ children, ...props }: any) => <pre {...props} className="mb-3">{children}</pre>,
+  pre: ({ children, ...props }: any) => <pre {...props} className="bg-[#0d0d12] border border-[#1a1a2e] rounded-xl p-4 overflow-x-auto mb-3 text-xs font-mono [&>code]:!bg-transparent [&>code]:!p-0 [&>code]:!border-none">{children}</pre>,
   blockquote: ({ children, ...props }: any) => (
     <blockquote {...props} className="border-l-2 border-[#102321] pl-3 italic text-[#9DAFAC] mb-3">{children}</blockquote>
   ),

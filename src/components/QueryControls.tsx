@@ -39,16 +39,21 @@ interface Props {
   disabled?: boolean;
 }
 
-function getRect(el: HTMLElement) {
+function getRectBelow(el: HTMLElement) {
   const r = el.getBoundingClientRect();
   return { left: r.left, top: r.bottom + 4, minWidth: Math.max(r.width, 180) };
+}
+
+function getRectAbove(el: HTMLElement) {
+  const r = el.getBoundingClientRect();
+  return { left: r.left, bottom: window.innerHeight - r.top + 4, minWidth: Math.max(r.width, 180) };
 }
 
 export function QueryControls({ mode, onModeChange, model, onModelChange, disabled }: Props) {
   const [open, setOpen] = useState(false);
   const [modelOpen, setModelOpen] = useState(false);
   const [pos, setPos] = useState({ left: 0, top: 0, minWidth: 180 });
-  const [modelPos, setModelPos] = useState({ left: 0, top: 0, minWidth: 180 });
+  const [modelPos, setModelPos] = useState({ left: 0, bottom: 0, minWidth: 180 });
   const triggerRef = useRef<HTMLButtonElement>(null);
   const modelTriggerRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
@@ -103,7 +108,7 @@ export function QueryControls({ mode, onModeChange, model, onModelChange, disabl
           type="button"
           onClick={() => {
             if (disabled) return;
-            if (!open && triggerRef.current) setPos(getRect(triggerRef.current));
+            if (!open && triggerRef.current) setPos(getRectBelow(triggerRef.current));
             setOpen((o) => !o);
           }}
           disabled={disabled}
@@ -128,7 +133,7 @@ export function QueryControls({ mode, onModeChange, model, onModelChange, disabl
           type="button"
           onClick={() => {
             if (disabled) return;
-            if (!modelOpen && modelTriggerRef.current) setModelPos(getRect(modelTriggerRef.current));
+            if (!modelOpen && modelTriggerRef.current) setModelPos(getRectAbove(modelTriggerRef.current));
             setModelOpen((o) => !o);
           }}
           disabled={disabled}
@@ -191,12 +196,12 @@ export function QueryControls({ mode, onModeChange, model, onModelChange, disabl
             <motion.div
               ref={modelPopoverRef}
               role="listbox"
-              initial={{ opacity: 0, y: -6, scale: 0.95 }}
+              initial={{ opacity: 0, y: 6, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -4, scale: 0.95 }}
+              exit={{ opacity: 0, y: 4, scale: 0.95 }}
               transition={dropdownTransition}
-              style={{ position: "fixed", left: modelPos.left, top: modelPos.top, minWidth: modelPos.minWidth, zIndex: 9999 }}
-              className="bg-[#0d0d10] border border-white/10 rounded-xl shadow-2xl shadow-black/60 overflow-hidden origin-top-left"
+              style={{ position: "fixed", left: modelPos.left, bottom: modelPos.bottom, minWidth: modelPos.minWidth, zIndex: 9999 }}
+              className="bg-[#0d0d10] border border-white/10 rounded-xl shadow-2xl shadow-black/60 overflow-hidden origin-bottom-left"
             >
               {MODEL_OPTIONS.map((opt) => {
                 const selected = opt.id === model;
