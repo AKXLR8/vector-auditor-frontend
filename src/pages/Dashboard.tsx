@@ -2116,8 +2116,6 @@ export default function Dashboard() {
                         <QueryControls
                           mode={queryMode}
                           onModeChange={setQueryMode}
-                          maxCitations={maxCitations}
-                          onMaxCitationsChange={setMaxCitations}
                           model={activeModel}
                           onModelChange={setActiveModel}
                           disabled={loading}
