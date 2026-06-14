@@ -39,11 +39,6 @@ interface Props {
   disabled?: boolean;
 }
 
-function getRectBelow(el: HTMLElement) {
-  const r = el.getBoundingClientRect();
-  return { left: r.left, top: r.bottom + 4, minWidth: Math.max(r.width, 180) };
-}
-
 function getRectAbove(el: HTMLElement) {
   const r = el.getBoundingClientRect();
   return { left: r.left, bottom: window.innerHeight - r.top + 4, minWidth: Math.max(r.width, 180) };
@@ -52,7 +47,7 @@ function getRectAbove(el: HTMLElement) {
 export function QueryControls({ mode, onModeChange, model, onModelChange, disabled }: Props) {
   const [open, setOpen] = useState(false);
   const [modelOpen, setModelOpen] = useState(false);
-  const [pos, setPos] = useState({ left: 0, top: 0, minWidth: 180 });
+  const [pos, setPos] = useState({ left: 0, bottom: 0, minWidth: 180 });
   const [modelPos, setModelPos] = useState({ left: 0, bottom: 0, minWidth: 180 });
   const triggerRef = useRef<HTMLButtonElement>(null);
   const modelTriggerRef = useRef<HTMLButtonElement>(null);
@@ -108,7 +103,7 @@ export function QueryControls({ mode, onModeChange, model, onModelChange, disabl
           type="button"
           onClick={() => {
             if (disabled) return;
-            if (!open && triggerRef.current) setPos(getRectBelow(triggerRef.current));
+            if (!open && triggerRef.current) setPos(getRectAbove(triggerRef.current));
             setOpen((o) => !o);
           }}
           disabled={disabled}
@@ -157,12 +152,12 @@ export function QueryControls({ mode, onModeChange, model, onModelChange, disabl
             <motion.div
               ref={popoverRef}
               role="listbox"
-              initial={{ opacity: 0, y: -6, scale: 0.95 }}
+              initial={{ opacity: 0, y: 6, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -4, scale: 0.95 }}
+              exit={{ opacity: 0, y: 4, scale: 0.95 }}
               transition={dropdownTransition}
-              style={{ position: "fixed", left: pos.left, top: pos.top, minWidth: pos.minWidth, zIndex: 9999 }}
-              className="bg-[#0d0d10] border border-white/10 rounded-xl shadow-2xl shadow-black/60 overflow-hidden origin-top-left"
+              style={{ position: "fixed", left: pos.left, bottom: pos.bottom, minWidth: pos.minWidth, zIndex: 9999 }}
+              className="bg-[#0d0d10] border border-white/10 rounded-xl shadow-2xl shadow-black/60 overflow-hidden origin-bottom-left"
             >
               {MODE_OPTIONS.map((opt) => {
                 const Icon = opt.icon;
