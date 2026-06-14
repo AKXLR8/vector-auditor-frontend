@@ -27,8 +27,8 @@ const MODE_OPTIONS: ModeOption[] = [
 ];
 
 const MODEL_OPTIONS = [
-  { id: "mercury-2", label: "Mercury-2" },
-  { id: "minimax-m3", label: "Minimax-m3" },
+  { id: "mercury", label: "Mercury 2" },
+  { id: "minimax", label: "Minimax M3 (NVIDIA)" },
 ];
 
 interface Props {

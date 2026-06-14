@@ -315,7 +315,7 @@ export default function Dashboard() {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [queryMode, setQueryMode] = useLocalStorage<QueryMode>("query_mode", "white_box");
   const [maxCitations, setMaxCitations] = useLocalStorage<number>("query_max_citations", 5);
-  const [activeModel, setActiveModel] = useLocalStorage<string>("active_model", "mercury-2");
+  const [activeModel, setActiveModel] = useLocalStorage<string>("active_model", "mercury");
 
   const messagesEnd = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
