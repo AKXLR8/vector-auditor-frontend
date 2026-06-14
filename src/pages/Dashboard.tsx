@@ -1837,11 +1837,18 @@ export default function Dashboard() {
                                       {msg.content ? (
                                         <DiffusingMarkdown content={msg.content} streaming={loading && msg.role === "assistant" && idx === messages.length - 1} />
                                       ) : (
-                                        <span className="inline-flex items-center gap-1.5">
-                                          <span className="w-2 h-2 rounded-full bg-[#3B82F6] inline-block animate-pulse" style={{ animationDelay: "0ms" }} />
-                                          <span className="w-2 h-2 rounded-full bg-[#3B82F6] inline-block animate-pulse" style={{ animationDelay: "150ms" }} />
-                                          <span className="w-2 h-2 rounded-full bg-[#3B82F6] inline-block animate-pulse" style={{ animationDelay: "300ms" }} />
-                                        </span>
+                                        <div className="flex flex-col gap-2">
+                                          <span className="inline-flex items-center gap-1.5">
+                                            <span className="w-2 h-2 rounded-full bg-[#3B82F6] inline-block animate-pulse" style={{ animationDelay: "0ms" }} />
+                                            <span className="w-2 h-2 rounded-full bg-[#3B82F6] inline-block animate-pulse" style={{ animationDelay: "150ms" }} />
+                                            <span className="w-2 h-2 rounded-full bg-[#3B82F6] inline-block animate-pulse" style={{ animationDelay: "300ms" }} />
+                                          </span>
+                                          {loading && queryMode === "white_box" && (
+                                            <p className="text-[11px] text-white/40 leading-relaxed animate-pulse">
+                                              May take a while — using max reasoning on CPU hardware
+                                            </p>
+                                          )}
+                                        </div>
                                       )}
                                     </div>
                                     {msg.reasoning_path && msg.reasoning_path.length > 0 && msg.mode !== "black_box" && (
