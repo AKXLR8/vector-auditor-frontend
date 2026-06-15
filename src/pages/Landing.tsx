@@ -4,7 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import {
   Sparkle, CaretRight, List, MagnifyingGlass, FileText, Robot,
-  Stack, Upload,
+  Stack, Upload, GithubLogo, Envelope,
 } from "@phosphor-icons/react";
 
 /* ─── Shared Primitives ────────────────────────────────────────────── */
@@ -616,12 +616,23 @@ export default function Landing() {
             <LogoMark className="w-16 h-16" />
             <span className="font-medium text-white/60">Vector Auditor</span>
           </div>
-          <div className="flex items-center justify-center gap-4 flex-wrap text-center">
-            <span>Document Q&A</span>
-            <span aria-hidden="true" className="hidden sm:inline">·</span>
-            <span>Cited answers</span>
-            <span aria-hidden="true" className="hidden sm:inline">·</span>
-            <span>Page-level precision</span>
+          <div className="flex items-center justify-center gap-5 flex-wrap text-center">
+            <a
+              href="https://github.com/AKXLR8"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-white/40 hover:text-white transition-colors"
+              aria-label="GitHub"
+            >
+              <GithubLogo size={22} weight="fill" />
+            </a>
+            <a
+              href="mailto:projectkaka9@gmail.com"
+              className="text-white/40 hover:text-white transition-colors"
+              aria-label="Email"
+            >
+              <Envelope size={22} weight="fill" />
+            </a>
           </div>
           <p>&copy; {new Date().getFullYear()} Vector Auditor</p>
         </div>
