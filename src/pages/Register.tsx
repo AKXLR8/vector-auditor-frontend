@@ -37,7 +37,7 @@ function InputGroup({ label, placeholder, type, value, onChange, error, children
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          className="w-full bg-brand-gray border-none rounded-xl h-11 px-4 text-white placeholder:text-white/20 focus:ring-2 focus:ring-white/20 focus:outline-none text-sm"
+          className="w-full bg-brand-gray border-none rounded-xl h-11 px-4 text-white placeholder:text-white/20 focus:ring-2 focus:ring-white/20 focus:outline-none text-[16px] sm:text-sm"
         />
         {children}
       </div>

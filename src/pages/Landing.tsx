@@ -198,7 +198,7 @@ export default function Landing() {
             {NAV_LINKS.map((link) => (
               <a key={link} href={`#${link.toLowerCase().replace(/\s+/g, "-")}`}
                 onClick={(e) => { setMobileNavOpen(false); handleNavClick(e, `#${link.toLowerCase().replace(/\s+/g, "-")}`); }}
-                className="block text-sm text-white/70 hover:text-white py-2.5">{link}</a>
+                className="block text-sm text-white/70 hover:text-white py-3">{link}</a>
             ))}
             <hr className="border-white/10" />
             {user ? (
@@ -252,14 +252,14 @@ export default function Landing() {
           {user ? (
             <Link
               to="/chat"
-              className="group inline-flex items-center justify-center gap-2 rounded-full bg-white text-black font-medium text-sm px-5 py-3 transition-all hover:bg-white/90 active:scale-[0.98]"
+              className="group inline-flex items-center justify-center gap-2 rounded-full bg-white text-black font-medium text-sm sm:text-sm px-6 py-3.5 sm:px-5 sm:py-3 transition-all hover:bg-white/90 active:scale-[0.98]"
             >
               Open Dashboard
               <CaretRight size={16} className="transition-transform group-hover:translate-x-[1px]" />
             </Link>
           ) : (
             <Link to="/register"
-              className="group inline-flex items-center justify-center gap-2 rounded-full bg-white text-black font-medium text-sm px-5 py-3 transition-all hover:bg-white/90 active:scale-[0.98]"
+              className="group inline-flex items-center justify-center gap-2 rounded-full bg-white text-black font-medium text-sm sm:text-sm px-6 py-3.5 sm:px-5 sm:py-3 transition-all hover:bg-white/90 active:scale-[0.98]"
             >
               Get Started Free
               <CaretRight size={16} className="transition-transform group-hover:translate-x-[1px]" />
@@ -585,21 +585,21 @@ export default function Landing() {
               {user ? (
                 <Link
                   to="/chat"
-                  className="group inline-flex items-center justify-center gap-2 rounded-full bg-white text-black font-medium text-sm px-5 py-3 transition-all hover:bg-white/90 active:scale-[0.98]"
+                  className="group inline-flex items-center justify-center gap-2 rounded-full bg-white text-black font-medium text-sm sm:text-sm px-6 py-3.5 sm:px-5 sm:py-3 transition-all hover:bg-white/90 active:scale-[0.98]"
                 >
                   Open Dashboard
                   <CaretRight size={16} className="transition-transform group-hover:translate-x-[1px]" />
                 </Link>
               ) : (
                 <Link to="/register"
-                  className="group inline-flex items-center justify-center gap-2 rounded-full bg-white text-black font-medium text-sm px-5 py-3 transition-all hover:bg-white/90 active:scale-[0.98]"
+                  className="group inline-flex items-center justify-center gap-2 rounded-full bg-white text-black font-medium text-sm sm:text-sm px-6 py-3.5 sm:px-5 sm:py-3 transition-all hover:bg-white/90 active:scale-[0.98]"
                 >
                   Get Started Free
                   <CaretRight size={16} className="transition-transform group-hover:translate-x-[1px]" />
                 </Link>
               )}
               <Link to="/login"
-                className="group inline-flex items-center justify-center gap-2 rounded-full border border-white/15 text-white text-sm font-medium px-5 py-3 hover:bg-white/5 transition-all"
+                className="group inline-flex items-center justify-center gap-2 rounded-full border border-white/15 text-white text-sm sm:text-sm font-medium px-6 py-3.5 sm:px-5 sm:py-3 hover:bg-white/5 transition-all"
               >
                 Sign In
                 <CaretRight size={16} className="transition-transform group-hover:translate-x-[1px]" />

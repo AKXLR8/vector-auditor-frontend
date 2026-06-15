@@ -661,6 +661,16 @@ input:focus-visible, textarea:focus-visible, select:focus-visible {
     -webkit-overflow-scrolling: touch;
   }
 
+  /* Remove tap highlight on mobile */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Prevent double-tap zoom on interactive elements */
+  button, a, input, textarea, select {
+    touch-action: manipulation;
+  }
+
   /* Simplify diffuse-in animation on mobile — remove expensive blur filter */
   @keyframes diffuse {
     0% { opacity: 0; }
