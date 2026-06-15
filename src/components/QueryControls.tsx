@@ -107,7 +107,7 @@ export function QueryControls({ mode, onModeChange, model, onModelChange, disabl
 
   return (
     <div className="flex items-center gap-1.5 flex-wrap">
-      <div className="relative">
+      <div className="relative shrink-0">
         <button
           ref={triggerRef}
           type="button"
@@ -120,19 +120,19 @@ export function QueryControls({ mode, onModeChange, model, onModelChange, disabl
           aria-haspopup="listbox"
           aria-expanded={open}
           title={mode === "white_box" ? "Researcher — detailed reasoning, gap analysis, verification" : "Direct — concise answer, no reasoning"}
-          className={`inline-flex items-center gap-1 h-7 px-2.5 rounded-lg text-[11px] font-medium transition-all border ${
+          className={`inline-flex items-center gap-1 h-7 px-2 sm:px-2.5 rounded-lg text-[11px] font-medium transition-all border ${
             open
               ? "bg-white/[0.08] border-white/[0.12] text-white"
               : "bg-white/[0.03] border-white/[0.06] text-white/80 hover:bg-white/[0.06] hover:border-white/[0.1]"
           } ${disabled ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}`}
         >
           <CurrentIcon size={11} weight="bold" className={mode === "white_box" ? "text-[#60A5FA]" : "text-amber-300"} />
-          <span>{current.label}</span>
+          <span className="max-w-[60px] sm:max-w-none truncate">{current.label}</span>
           <CaretDown size={9} weight="bold" className={`transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
         </button>
       </div>
 
-      <div className="relative">
+      <div className="relative shrink-0">
         <button
           ref={modelTriggerRef}
           type="button"
@@ -144,14 +144,14 @@ export function QueryControls({ mode, onModeChange, model, onModelChange, disabl
           disabled={disabled}
           aria-haspopup="listbox"
           aria-expanded={modelOpen}
-          className={`inline-flex items-center gap-1.5 h-7 px-2.5 rounded-lg text-[11px] font-medium transition-all border ${
+          className={`inline-flex items-center gap-1.5 h-7 px-2 sm:px-2.5 rounded-lg text-[11px] font-medium transition-all border ${
             modelOpen
               ? "bg-white/[0.08] border-white/[0.12] text-white"
               : "bg-white/[0.03] border-white/[0.06] text-white/80 hover:bg-white/[0.06] hover:border-white/[0.1]"
           } ${disabled ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}`}
         >
           <Robot size={11} weight="bold" className="text-[#60A5FA]" />
-          <span>{currentProfile?.name ?? model}</span>
+          <span className="max-w-[80px] sm:max-w-none truncate">{currentProfile?.name ?? model}</span>
           <CaretDown size={9} weight="bold" className={`transition-transform duration-200 ${modelOpen ? "rotate-180" : ""}`} />
         </button>
       </div>
@@ -160,7 +160,7 @@ export function QueryControls({ mode, onModeChange, model, onModelChange, disabl
         type="button"
         onClick={() => navigate("/analysis")}
         title="Open document analysis"
-        className="inline-flex items-center gap-1 h-7 px-2 rounded-lg text-[11px] font-medium transition-all border bg-white/[0.03] border-white/[0.06] text-white/80 hover:bg-white/[0.06] hover:border-white/[0.1] cursor-pointer"
+        className="shrink-0 inline-flex items-center gap-1 h-7 px-2 rounded-lg text-[11px] font-medium transition-all border bg-white/[0.03] border-white/[0.06] text-white/80 hover:bg-white/[0.06] hover:border-white/[0.1] cursor-pointer"
       >
         <Sparkle size={11} weight="bold" className="text-[#60A5FA]" />
         <span className="hidden sm:inline">Analysis</span>
