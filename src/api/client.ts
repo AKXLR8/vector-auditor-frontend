@@ -8,7 +8,7 @@ export const DISPLAY_NAME_KEY = "user_display_name";
 const client = axios.create({
   baseURL: getApiBaseUrl(),
   headers: { "Content-Type": "application/json" },
-  timeout: 60000,
+  timeout: 180000,
 });
 
 let isRefreshing = false;
