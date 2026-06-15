@@ -372,30 +372,7 @@ export default function Analysis() {
 
         {/* ─── MAIN CONTENT (50%) ─── */}
         <main className="flex-1 min-w-0 flex flex-col overflow-y-auto gap-5">
-          {/* Analyze trigger */}
-          <GlassCard className="p-4">
-            <div className="flex items-center gap-2">
-              <div className="flex-1 relative">
-                <input
-                  value={focusTopic}
-                  onChange={(e) => setFocusTopic(e.target.value)}
-                  placeholder="Ask anything about your documents..."
-                  className="w-full h-[72px] px-5 rounded-[20px] bg-white/[0.03] border border-white/[0.08] text-sm text-white placeholder:text-white/30 outline-none focus:border-[#2563EB]/40 focus:bg-white/[0.05] transition-all"
-                  onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); runAnalysis(); } }}
-                />
-              </div>
-              <motion.button
-                type="button"
-                onClick={runAnalysis}
-                disabled={analyzing || readyDocs.length === 0}
-                whileHover={!analyzing && readyDocs.length > 0 ? { scale: 1.05 } : {}}
-                whileTap={!analyzing && readyDocs.length > 0 ? { scale: 0.95 } : {}}
-                className="w-12 h-12 rounded-full bg-gradient-to-br from-[#2563EB] to-[#1E3A5F] text-white flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed shrink-0 shadow-lg shadow-[#2563EB]/20 hover:shadow-[#2563EB]/30 transition-shadow"
-              >
-                {analyzing ? <Spinner size={16} className="animate-spin" /> : <PaperPlaneRight size={16} weight="bold" />}
-              </motion.button>
-            </div>
-          </GlassCard>
+
 
           {/* Analysis results or empty / loading / error states */}
           <AnimatePresence mode="wait">
