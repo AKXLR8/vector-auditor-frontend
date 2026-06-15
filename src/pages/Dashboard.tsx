@@ -1692,7 +1692,6 @@ export default function Dashboard() {
           <div className="flex items-center gap-2.5 px-3 py-2">
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-white/80 truncate leading-tight">{accountName}</p>
-              <p className="text-[10px] text-[#9DAFAC]/50 truncate leading-tight">{tokensUsed.toLocaleString()} tokens</p>
             </div>
           </div>
           {isAdmin && (
