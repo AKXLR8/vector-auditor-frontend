@@ -213,6 +213,89 @@ export default function Analysis() {
     } finally { setAnalyzing(false); }
   };
 
+  /* ── Export helpers ── */
+  function downloadFile(content: string, filename: string, mime: string) {
+    const blob = new Blob([content], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function buildMdReport(r: DocumentAnalysis) {
+    const lines: string[] = [];
+    lines.push("# Document Analysis Report");
+    lines.push("");
+    if (r.summary) { lines.push("## Summary"); lines.push(r.summary); lines.push(""); }
+    if (r.key_findings?.length) {
+      lines.push("## Key Findings");
+      r.key_findings.forEach((f, i) => { lines.push(`${i + 1}. ${f}`); });
+      lines.push("");
+    }
+    if (r.research_gaps?.length) {
+      lines.push("## Research Gaps");
+      r.research_gaps.forEach((g, i) => { lines.push(`${i + 1}. ${g}`); });
+      lines.push("");
+    }
+    if (r.methodology) { lines.push("## Methodology"); lines.push(r.methodology); lines.push(""); }
+    if (r.limitations) { lines.push("## Limitations"); lines.push(r.limitations); lines.push(""); }
+    return lines.join("\n");
+  }
+
+  function exportAsMd() {
+    if (!result) return;
+    downloadFile(buildMdReport(result), "analysis-report.md", "text/markdown");
+    toast.success("Markdown report downloaded");
+  }
+
+  function buildPrintHtml(r: DocumentAnalysis) {
+    const items = (arr: string[] | undefined, tag: string) =>
+      arr?.map((x) => `    <${tag}>${x}</${tag}>`).join("\n") ?? "";
+    return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Analysis Report</title>
+<style>
+  body{font-family:system-ui,sans-serif;max-width:800px;margin:40px auto;padding:0 20px;color:#111;line-height:1.6}
+  h1{font-size:1.8rem;border-bottom:2px solid #2563EB;padding-bottom:8px}
+  h2{font-size:1.3rem;margin-top:28px;color:#2563EB}
+  ul{padding-left:20px}
+  li{margin-bottom:4px}
+  .meta{color:#666;font-size:0.9rem}
+  .sep{border:none;border-top:1px solid #ddd;margin:24px 0}
+</style></head><body>
+<h1>Document Analysis Report</h1>
+<p class="meta">${r.documents_analyzed.length} document(s) analyzed &mdash; Confidence: ${r.confidence}</p>
+<hr class="sep">
+<h2>Summary</h2><p>${r.summary}</p>
+${r.key_findings?.length ? `<h2>Key Findings</h2><ol>${items(r.key_findings, "li")}</ol>` : ""}
+${r.research_gaps?.length ? `<h2>Research Gaps</h2><ol>${items(r.research_gaps, "li")}</ol>` : ""}
+${r.methodology ? `<h2>Methodology</h2><p>${r.methodology}</p>` : ""}
+${r.limitations ? `<h2>Limitations</h2><p>${r.limitations}</p>` : ""}
+</body></html>`;
+  }
+
+  function exportAsPdf() {
+    if (!result) return;
+    const win = window.open("", "_blank");
+    if (!win) { toast.error("Popup blocked. Allow popups for PDF export."); return; }
+    win.document.write(buildPrintHtml(result));
+    win.document.close();
+    win.focus();
+    setTimeout(() => win.print(), 400);
+  }
+
+  const [exportOpen, setExportOpen] = useState(false);
+  const exportRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!exportOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (exportRef.current && !exportRef.current.contains(e.target as Node)) setExportOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [exportOpen]);
+
   const handleChatSubmit = async () => {
     if (!chatQuery.trim() || chatLoading || !result) return;
     const question = chatQuery.trim();
@@ -635,21 +718,41 @@ export default function Analysis() {
                 </div>
                 <CaretRight size={12} className="text-white/30 shrink-0" />
               </button>
-              <button
-                type="button"
-                disabled={!result}
-                onClick={() => { if (result) setChatQuery("Export this analysis as a structured report"); }}
-                className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-white/[0.04] hover:ring-1 hover:ring-white/[0.06] transition-all text-left cursor-pointer disabled:opacity-40"
-              >
-                <div className="w-7 h-7 rounded-lg bg-[#2563EB]/10 flex items-center justify-center shrink-0">
-                  <Download size={13} className="text-[#60A5FA]" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-white/80">Export Analysis</p>
-                  <p className="text-[10px] text-white/40 truncate">Download analysis report as PDF/Markdown</p>
-                </div>
-                <CaretRight size={12} className="text-white/30 shrink-0" />
-              </button>
+              <div className="relative" ref={exportRef}>
+                <button
+                  type="button"
+                  disabled={!result}
+                  onClick={() => setExportOpen((o) => !o)}
+                  className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-white/[0.04] hover:ring-1 hover:ring-white/[0.06] transition-all text-left cursor-pointer disabled:opacity-40"
+                >
+                  <div className="w-7 h-7 rounded-lg bg-[#2563EB]/10 flex items-center justify-center shrink-0">
+                    <Download size={13} className="text-[#60A5FA]" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium text-white/80">Export Analysis</p>
+                    <p className="text-[10px] text-white/40 truncate">Download analysis report as PDF/Markdown</p>
+                  </div>
+                  <CaretDown size={10} weight="bold" className={`text-white/30 shrink-0 transition-transform ${exportOpen ? "rotate-180" : ""}`} />
+                </button>
+                <AnimatePresence>
+                  {exportOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -4, scale: 0.96 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -4, scale: 0.96 }}
+                      transition={{ duration: 0.12 }}
+                      className="absolute bottom-full left-0 mb-1 w-full bg-[#0d0d10] border border-white/10 rounded-xl shadow-2xl shadow-black/60 overflow-hidden z-30 origin-bottom-left"
+                    >
+                      <button onClick={() => { exportAsPdf(); setExportOpen(false); }} className="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-white/[0.05] transition-colors text-xs text-white/80 text-left">
+                        <Download size={12} /> Export as PDF
+                      </button>
+                      <button onClick={() => { exportAsMd(); setExportOpen(false); }} className="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-white/[0.05] transition-colors text-xs text-white/80 text-left">
+                        <FileText size={12} /> Export as Markdown
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             </div>
           </GlassCard>
         </aside>
