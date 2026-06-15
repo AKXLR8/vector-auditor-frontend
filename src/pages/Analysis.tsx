@@ -10,7 +10,7 @@ import {
   CaretRight, Download,
 } from "@phosphor-icons/react";
 import { useAuth } from "../context/AuthContext";
-import { analyzeDocuments, sendQuery } from "../api/query";
+import { analyzeDocuments, sendNexAGI } from "../api/query";
 import { useDocumentSync } from "../hooks/useDocumentSync";
 import { useLocalStorage } from "../hooks/useLocalStorage";
 import { useDebounce } from "../hooks/useDebounce";
@@ -221,17 +221,12 @@ export default function Analysis() {
     setChatLoading(true);
     try {
       const analysisContext = `Analysis summary: ${result.summary}\n\nKey findings: ${result.key_findings.join("\n")}\n\nResearch gaps: ${result.research_gaps.join("\n")}\n\nMethodology: ${result.methodology}\n\nLimitations: ${result.limitations}`;
-      const res = await sendQuery({
-        question,
-        conversation_history: [
-          { role: "assistant", content: `You are analyzing the following document analysis report:\n\n${analysisContext}` },
-          ...chatMessages.map((m) => ({ role: m.role, content: m.content })),
-          { role: "user", content: question },
-        ],
-        model: activeModel,
-        mode: "white_box",
-      });
-      setChatMessages((p) => [...p, { role: "assistant", content: res.answer }]);
+      const answer = await sendNexAGI([
+        { role: "user", content: `You are analyzing the following document analysis report:\n\n${analysisContext}` },
+        ...chatMessages.map((m) => ({ role: m.role, content: m.content })),
+        { role: "user", content: question },
+      ]);
+      setChatMessages((p) => [...p, { role: "assistant", content: answer }]);
     } catch (err) {
       toast.error("Failed to get answer");
     } finally { setChatLoading(false); }

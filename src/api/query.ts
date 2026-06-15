@@ -15,6 +15,17 @@ export class StreamAbortError extends Error {
   }
 }
 
+export async function sendNexAGI(
+  messages: { role: "user" | "assistant"; content: string }[]
+): Promise<string> {
+  const { data } = await client.post("/NexAGI", {
+    messages,
+    model: "nex-agi/nex-n2-pro:free",
+    reasoning: true,
+  });
+  return data.choices?.[0]?.message?.content ?? data.content ?? data.answer ?? "";
+}
+
 export async function sendQuery(req: QueryRequest): Promise<QueryResponse> {
   const { data } = await client.post("/query", req);
   return data;
