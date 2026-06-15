@@ -358,11 +358,11 @@ ${r.limitations ? `<h2>Limitations</h2><p>${r.limitations}</p>` : ""}
           </div>
           <div className="flex-1" />
           <div className="flex items-center gap-1">
-            <Link to="/chat" className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-xs text-white/60 hover:text-white hover:bg-white/[0.05] transition-all">
-              <ChatText size={13} /> Chat
+            <Link to="/chat" className="inline-flex items-center gap-1.5 h-8 px-2 sm:px-3 rounded-lg text-xs text-white/60 hover:text-white hover:bg-white/[0.05] transition-all" title="Chat">
+              <ChatText size={13} /> <span className="hidden sm:inline">Chat</span>
             </Link>
-            <Link to="/" className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-xs text-white/60 hover:text-white hover:bg-white/[0.05] transition-all">
-              <House size={13} /> Home
+            <Link to="/" className="inline-flex items-center gap-1.5 h-8 px-2 sm:px-3 rounded-lg text-xs text-white/60 hover:text-white hover:bg-white/[0.05] transition-all" title="Home">
+              <House size={13} /> <span className="hidden sm:inline">Home</span>
             </Link>
             <div className="hidden md:flex items-center gap-2 pl-2 ml-1 border-l border-white/[0.06]">
               <span className="text-xs text-white/50 truncate max-w-[120px]">{accountName}</span>
@@ -376,9 +376,9 @@ ${r.limitations ? `<h2>Limitations</h2><p>${r.limitations}</p>` : ""}
       </header>
 
       {/* ─── Three-column layout ─── */}
-      <div className="flex-1 flex gap-6 p-6 overflow-hidden">
+      <div className="flex-1 flex flex-col lg:flex-row gap-3 sm:gap-6 p-3 sm:p-6 overflow-hidden">
         {/* ─── LEFT SIDEBAR (20%) ─── */}
-        <aside className="hidden lg:flex w-[20%] min-w-[220px] shrink-0 flex-col">
+        <aside className="flex lg:flex w-full lg:w-[20%] min-w-0 lg:min-w-[220px] shrink-0 flex-col max-h-[200px] lg:max-h-none">
           <GlassCard className="flex flex-col h-full overflow-hidden">
             <div className="px-4 pt-4 pb-2 shrink-0">
               <h2 className="text-sm font-semibold text-white">Documents</h2>
@@ -491,9 +491,9 @@ ${r.limitations ? `<h2>Limitations</h2><p>${r.limitations}</p>` : ""}
             )}
 
             {result && !analyzing && (
-              <motion.div key="result" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.35 }} className="space-y-4">
+              <motion.div key="result" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.35 }} className="space-y-3 sm:space-y-4">
                 {/* Research Gaps & Key Findings */}
-                <GlassCard className="p-5">
+                <GlassCard className="p-4 sm:p-5">
                   <div className="space-y-1 mb-4">
                     <h1 className="text-xl font-semibold text-white tracking-tight">Research Gaps &amp; Key Findings</h1>
                     <p className="text-xs text-white/50 max-w-xl">
@@ -520,7 +520,7 @@ ${r.limitations ? `<h2>Limitations</h2><p>${r.limitations}</p>` : ""}
                   </div>
 
                   {/* Analysis header card */}
-                  <GlassCard className="p-4 mb-4 bg-gradient-to-br from-white/[0.04] to-transparent">
+                  <GlassCard className="p-3 sm:p-4 mb-3 sm:mb-4 bg-gradient-to-br from-white/[0.04] to-transparent">
                     <div className="flex items-start justify-between gap-3 flex-wrap">
                       <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-xl bg-[#2563EB]/10 flex items-center justify-center">
@@ -650,7 +650,7 @@ ${r.limitations ? `<h2>Limitations</h2><p>${r.limitations}</p>` : ""}
 
             {!result && !analyzing && !error && (
               <motion.div key="empty" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
-                <GlassCard className="p-8 text-center">
+                <GlassCard className="p-6 sm:p-8 text-center">
                   <div className="w-12 h-12 rounded-full bg-white/[0.04] flex items-center justify-center mx-auto mb-3">
                     <Sparkle size={20} weight="bold" className="text-white/40" />
                   </div>
@@ -665,7 +665,7 @@ ${r.limitations ? `<h2>Limitations</h2><p>${r.limitations}</p>` : ""}
         </main>
 
         {/* ─── RIGHT PANEL (30%) ─── */}
-        <aside className="hidden xl:flex w-[30%] min-w-[260px] max-w-[340px] shrink-0 flex-col gap-4 overflow-y-auto">
+        <aside className="flex xl:flex w-full xl:w-[30%] min-w-0 xl:min-w-[260px] xl:max-w-[340px] shrink-0 flex-col gap-4 overflow-y-auto">
           {/* Paper Analysis Card */}
           <GlassCard className="p-4">
             <div className="w-1 h-10 w-full rounded-full bg-gradient-to-r from-purple-500 to-transparent mb-3" />
