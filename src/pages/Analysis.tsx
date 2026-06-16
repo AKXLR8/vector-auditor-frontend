@@ -135,10 +135,40 @@ export default function Analysis() {
   const [chatMessages, setChatMessages] = useState<{ role: "user" | "assistant"; content: string }[]>([]);
   const [chatLoading, setChatLoading] = useState(false);
   const chatEnd = useRef<HTMLDivElement>(null);
+  const [fullAnalysisLoading, setFullAnalysisLoading] = useState(false);
 
   useEffect(() => {
     chatEnd.current?.scrollIntoView({ behavior: "smooth" });
   }, [chatMessages]);
+
+  const handleFullAnalysis = async () => {
+    if (!result || fullAnalysisLoading) return;
+    setFullAnalysisLoading(true);
+    try {
+      const sections = [
+        result.summary ? `## Summary\n\n${result.summary}` : "",
+        result.key_findings?.length ? `## Key Findings\n\n${result.key_findings.map((f, i) => `${i + 1}. ${f}`).join("\n")}` : "",
+        result.methodology ? `## Methodology\n\n${result.methodology}` : "",
+        result.research_gaps?.length ? `## Research Gaps\n\n${result.research_gaps.map((g, i) => `${i + 1}. ${g}`).join("\n")}` : "",
+        result.contradictions?.length ? `## Contradictions\n\n${result.contradictions.map((c, i) => `${i + 1}. ${c}`).join("\n")}` : "",
+        result.open_questions?.length ? `## Open Questions\n\n${result.open_questions.map((q, i) => `${i + 1}. ${q}`).join("\n")}` : "",
+        result.limitations ? `## Limitations\n\n${result.limitations}` : "",
+        result.citations?.length ? `## Citations\n\n${result.citations.map((c, i) => `${i + 1}. ${c.source}${c.page ? ` (p.${c.page})` : ""}: "${c.quote}"`).join("\n")}` : "",
+      ];
+      const baseContent = sections.filter(Boolean).join("\n\n");
+      const answer = await sendNexAGI([
+        {
+          role: "user",
+          content: `You are a research paper analyst. Given the following structured analysis of a set of documents, produce a comprehensive, well-organized full paper analysis report. Include an executive summary, detailed findings across all sections, and a conclusion with recommendations.\n\n---\n\n${baseContent}`,
+        },
+      ]);
+      navigate("/analysis/full", { state: { content: answer, analysis: result } });
+    } catch {
+      toast.error("Failed to generate full analysis");
+    } finally {
+      setFullAnalysisLoading(false);
+    }
+  };
 
   const { refetch } = useDocumentSync({
     enabled: !!uid,
@@ -408,8 +438,8 @@ ${r.limitations ? `<h2>Limitations</h2><p>${r.limitations}</p>` : ""}
 
       {/* ─── Three-column layout ─── */}
       <div className="flex-1 flex flex-col lg:flex-row gap-3 sm:gap-6 p-3 sm:p-6 overflow-hidden">
-        {/* ─── LEFT SIDEBAR (20%) ─── */}
-        <aside className="flex lg:flex w-full lg:w-[20%] min-w-0 lg:min-w-[220px] shrink-0 flex-col max-h-[200px] lg:max-h-none">
+        {/* ─── LEFT SIDEBAR ─── */}
+        <aside className="flex w-full lg:w-[20%] min-w-0 lg:min-w-[220px] shrink-0 flex-col max-h-[160px] lg:max-h-none">
           <GlassCard className="flex flex-col h-full overflow-hidden">
             <div className="px-4 pt-4 pb-2 shrink-0">
               <h2 className="text-sm font-semibold text-white">Documents</h2>
@@ -770,8 +800,8 @@ ${r.limitations ? `<h2>Limitations</h2><p>${r.limitations}</p>` : ""}
           </AnimatePresence>
         </main>
 
-        {/* ─── RIGHT PANEL (30%) ─── */}
-        <aside className="flex xl:flex w-full xl:w-[30%] min-w-0 xl:min-w-[260px] xl:max-w-[340px] shrink-0 flex-col gap-4 overflow-y-auto">
+        {/* ─── RIGHT PANEL ─── */}
+        <aside className="flex w-full lg:w-[30%] min-w-0 lg:min-w-[260px] lg:max-w-[340px] shrink-0 flex-col gap-4 overflow-y-auto">
           {/* Paper Analysis Card */}
           <GlassCard className="p-4">
             <div className="w-1 h-10 w-full rounded-full bg-gradient-to-r from-purple-500 to-transparent mb-3" />
@@ -797,11 +827,15 @@ ${r.limitations ? `<h2>Limitations</h2><p>${r.limitations}</p>` : ""}
 
             <button
               type="button"
-              disabled={!result}
-              onClick={() => { if (result) document.querySelector(".main-content")?.scrollTo({ top: 0, behavior: "smooth" }); }}
-              className="w-full mt-4 inline-flex items-center justify-center gap-2 h-9 rounded-xl text-xs font-semibold text-white bg-gradient-to-r from-[#2563EB] to-[#1E3A5F] hover:shadow-lg hover:shadow-[#2563EB]/20 disabled:opacity-40 transition-all cursor-pointer"
+              disabled={!result || fullAnalysisLoading}
+              onClick={handleFullAnalysis}
+              className="w-full mt-4 inline-flex items-center justify-center gap-2 h-9 rounded-xl text-xs font-semibold text-white bg-gradient-to-r from-purple-600 to-[#1E3A5F] hover:shadow-lg hover:shadow-purple-500/20 disabled:opacity-40 transition-all cursor-pointer"
             >
-              View Full Paper Analysis <ArrowRight size={12} weight="bold" />
+              {fullAnalysisLoading ? (
+                <><Spinner size={12} className="animate-spin" /> Generating...</>
+              ) : (
+                <><Brain size={13} /> Full Paper Analysis <ArrowRight size={12} weight="bold" /></>
+              )}
             </button>
           </GlassCard>
 

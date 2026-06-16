@@ -11,6 +11,7 @@ import Landing from "./pages/Landing";
 import Admin from "./pages/Admin";
 import AuthCallback from "./pages/AuthCallback";
 import Analysis from "./pages/Analysis";
+import FullAnalysis from "./pages/FullAnalysis";
 import NotFound from "./pages/NotFound";
 
 export default function App() {
@@ -56,6 +57,14 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <Analysis />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/analysis/full"
+            element={
+              <ProtectedRoute>
+                <FullAnalysis />
               </ProtectedRoute>
             }
           />
