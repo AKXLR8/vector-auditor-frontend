@@ -306,7 +306,7 @@ export default function Dashboard() {
   const [activePdf, setActivePdf] = useState<{ docId: string; citation: Citation; page: number; cloudinaryUrl?: string } | null>(null);
   const [activePanel, setActivePanel] = useState<"documents" | null>(null);
   const [plusOpen, setPlusOpen] = useState(false);
-  const [uploadPrivacy, setUploadPrivacy] = useState(false);
+  const [pendingUploadFiles, setPendingUploadFiles] = useState<FileList | null>(null);
 
   const [chatSearch, setChatSearch] = useState("");
   const debouncedChatSearch = useDebounce(chatSearch, 120);
@@ -457,7 +457,14 @@ export default function Dashboard() {
   ]);
 
   const onDropFiles = (files: FileList | null) => {
-    if (files && files.length > 0) handleUpload(files);
+    if (files && files.length > 0) setPendingUploadFiles(files);
+  };
+
+  const startUpload = (privacy: boolean) => {
+    if (pendingUploadFiles) {
+      handleUpload(pendingUploadFiles, privacy);
+      setPendingUploadFiles(null);
+    }
   };
 
   // Deduplicate documents by sha256 (keep most recent per unique content)
@@ -1139,7 +1146,7 @@ export default function Dashboard() {
     } catch { /* ignore */ }
   };
 
-  const handleUpload = async (files: FileList | null) => {
+  const handleUpload = async (files: FileList | null, privacy = false) => {
     if (!files?.length) return;
     const fileCount = files.length;
     setUploading(true);
@@ -1148,7 +1155,7 @@ export default function Dashboard() {
       _pending: { stage: "uploading", progress: 0 },
     }));
     try {
-      const res = await uploadDocuments(Array.from(files), uploadPrivacy);
+      const res = await uploadDocuments(Array.from(files), privacy);
       const progressMap: Record<string, { stage: string; progress: number }> = {};
       const optimistic: Document[] = [];
       const now = Date.now();
@@ -1169,6 +1176,7 @@ export default function Dashboard() {
           filename: item.filename || "Untitled",
           status: "processing",
           has_pii: false,
+          privacy,
           sha256: "",
           uploaded_by: uid,
           created_at: new Date().toISOString(),
@@ -1515,18 +1523,6 @@ export default function Dashboard() {
                   >
                     <FileText size={12} />
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => setUploadPrivacy((v) => !v)}
-                    className={`inline-flex items-center gap-1 h-5 px-1.5 rounded text-[9px] font-medium transition-all ${
-                      uploadPrivacy
-                        ? "bg-green-500/15 text-green-300"
-                        : "bg-white/[0.04] text-white/40"
-                    }`}
-                    title={uploadPrivacy ? "PII masking enabled (NDA mode)" : "No PII masking (research mode)"}
-                  >
-                    {uploadPrivacy ? "NDA" : "Research"}
-                  </button>
                   <button onClick={() => setSelectedDocs(new Set(dedupedDocs.map((d) => d.document_id ?? d.id)))}
                     className="text-[10px] text-[#3B82F6]/70 hover:text-[#3B82F6] transition-colors">All</button>
                   <button onClick={() => setSelectedDocs(new Set())}
@@ -1649,51 +1645,88 @@ export default function Dashboard() {
                   {docSearch && filteredDocs.length === 0 && (
                     <OnboardingEmpty variant="no-search-results" searchQuery={docSearch} />
                   )}
-                  {filteredDocs.map((doc) => {
-                    const did = doc.document_id ?? doc.id;
-                    const name = docDisplayName(doc);
-                    const ext = docExt(name);
-                    const statusKey = docStatusKey(doc);
-                    const pill = DOC_STATUS_PILL[statusKey];
-                    const isSelected = selectedDocs.has(did);
-                    return (
-                      <div key={did}
-                        draggable
-                        onDragStart={(e) => sidebarHandleDragStart(e, did)}
-                        onTouchStart={() => { touchDragDocRef.current = did; }}
-                        onTouchEnd={() => { touchDragDocRef.current = null; }}
-                        title={name}
-                        className="group flex items-center gap-2 px-2.5 py-3 md:py-2 rounded-xl text-sm hover:bg-white/[0.03] transition-[colors] duration-200 cursor-pointer active:bg-white/[0.05]"
-                        onClick={() => toggleDoc(did)}
-                      >
-                        <div className={`w-4 h-4 md:w-4 md:h-4 rounded border flex items-center justify-center shrink-0 transition-colors ${isSelected ? "bg-[#3B82F6] border-[#3B82F6]" : "border-white/[0.15]"}`}>
-                          {isSelected && (
-                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                              <polyline points="20 6 9 17 4 12" />
-                            </svg>
-                          )}
-                        </div>
-                        <FileText size={14} className={`shrink-0 ${isSelected ? "text-[#3B82F6]" : "text-[#9DAFAC]/60"}`} />
-                        <span className={`flex-1 min-w-0 truncate text-xs ${isSelected ? "text-white" : "text-[#9DAFAC]/70"}`}>{name}</span>
-                        {statusKey === "processing" ? (
-                          <Spinner size={10} className="animate-spin text-[#3B82F6] shrink-0" />
-                        ) : (
-                          <span className={`text-[10px] px-1.5 py-0.5 rounded shrink-0 ${pill.cls}`}>
-                            {ext ? `${ext} · ${pill.label}` : pill.label}
+                  {(() => {
+                    const researchDocs = filteredDocs.filter((d) => !d.privacy);
+                    const ndaDocs = filteredDocs.filter((d) => d.privacy);
+                    const renderDoc = (doc: Document) => {
+                      const did = doc.document_id ?? doc.id;
+                      const name = docDisplayName(doc);
+                      const ext = docExt(name);
+                      const statusKey = docStatusKey(doc);
+                      const pill = DOC_STATUS_PILL[statusKey];
+                      const isSelected = selectedDocs.has(did);
+                      return (
+                        <div key={did}
+                          draggable
+                          onDragStart={(e) => sidebarHandleDragStart(e, did)}
+                          onTouchStart={() => { touchDragDocRef.current = did; }}
+                          onTouchEnd={() => { touchDragDocRef.current = null; }}
+                          title={name}
+                          className="group flex items-center gap-2 px-2.5 py-3 md:py-2 rounded-xl text-sm hover:bg-white/[0.03] transition-[colors] duration-200 cursor-pointer active:bg-white/[0.05]"
+                          onClick={() => toggleDoc(did)}
+                        >
+                          <div className={`w-4 h-4 md:w-4 md:h-4 rounded border flex items-center justify-center shrink-0 transition-colors ${isSelected ? "bg-[#3B82F6] border-[#3B82F6]" : "border-white/[0.15]"}`}>
+                            {isSelected && (
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="20 6 9 17 4 12" />
+                              </svg>
+                            )}
+                          </div>
+                          <FileText size={14} className={`shrink-0 ${isSelected ? "text-[#3B82F6]" : "text-[#9DAFAC]/60"}`} />
+                          <span className={`flex-1 min-w-0 truncate text-xs ${isSelected ? "text-white" : "text-[#9DAFAC]/70"}`}>{name}</span>
+                          <span className={`text-[9px] px-1 py-0.5 rounded shrink-0 mr-0.5 ${doc.privacy ? "bg-emerald-500/15 text-emerald-400/80" : "bg-[#3B82F6]/15 text-[#60A5FA]/80"}`}>
+                            {doc.privacy ? "NDA" : "Research"}
                           </span>
+                          {statusKey === "processing" ? (
+                            <Spinner size={10} className="animate-spin text-[#3B82F6] shrink-0" />
+                          ) : (
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded shrink-0 ${pill.cls}`}>
+                              {ext ? `${ext} · ${pill.label}` : pill.label}
+                            </span>
+                          )}
+                          <button onClick={(e) => {
+                            e.stopPropagation();
+                            setConfirmDeleteId(did);
+                          }}
+                            disabled={deletingIds.has(did)}
+                            className="w-6 h-6 rounded hover:bg-red-500/10 flex items-center justify-center text-[#9DAFAC]/50 hover:text-red-400 transition-[colors,opacity] shrink-0 opacity-60 md:opacity-0 group-hover:opacity-100 disabled:opacity-100 disabled:cursor-not-allowed"
+                            title="Delete">
+                            {deletingIds.has(did) ? <Spinner size={10} className="animate-spin" /> : <X size={11} />}
+                          </button>
+                        </div>
+                      );
+                    };
+                    return (
+                      <>
+                        {researchDocs.length > 0 && (
+                          <>
+                            <div className="flex items-center gap-1.5 px-1 py-1 mt-1">
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-[#60A5FA]">
+                                <circle cx="11" cy="11" r="8" />
+                                <path d="m21 21-4.35-4.35" />
+                              </svg>
+                              <span className="text-[10px] font-medium text-[#9DAFAC]/60">Research</span>
+                              <span className="text-[9px] text-[#9DAFAC]/40 font-mono">{researchDocs.length}</span>
+                            </div>
+                            {researchDocs.map(renderDoc)}
+                          </>
                         )}
-                        <button onClick={(e) => {
-                          e.stopPropagation();
-                          setConfirmDeleteId(did);
-                        }}
-                          disabled={deletingIds.has(did)}
-                          className="w-6 h-6 rounded hover:bg-red-500/10 flex items-center justify-center text-[#9DAFAC]/50 hover:text-red-400 transition-[colors,opacity] shrink-0 opacity-60 md:opacity-0 group-hover:opacity-100 disabled:opacity-100 disabled:cursor-not-allowed"
-                          title="Delete">
-                          {deletingIds.has(did) ? <Spinner size={10} className="animate-spin" /> : <X size={11} />}
-                        </button>
-                      </div>
+                        {ndaDocs.length > 0 && (
+                          <>
+                            <div className="flex items-center gap-1.5 px-1 py-1 mt-1">
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-400">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                              </svg>
+                              <span className="text-[10px] font-medium text-[#9DAFAC]/60">NDA</span>
+                              <span className="text-[9px] text-[#9DAFAC]/40 font-mono">{ndaDocs.length}</span>
+                            </div>
+                            {ndaDocs.map(renderDoc)}
+                          </>
+                        )}
+                      </>
                     );
-                  })}
+                  })()}
                 </>
               )}
             </div>
@@ -1758,7 +1791,7 @@ export default function Dashboard() {
           />
         </div>
 
-        <input ref={fileInput} type="file" multiple accept=".pdf,.md,.txt,.docx" className="hidden" onChange={(e) => handleUpload(e.target.files)} />
+        <input ref={fileInput} type="file" multiple accept=".pdf,.md,.txt,.docx" className="hidden" onChange={(e) => { if (e.target.files?.length) setPendingUploadFiles(e.target.files); e.target.value = ""; }} />
 
         {/* ── Content Area ── */}
         <FileDropZone onFiles={onDropFiles} disabled={loading} className="flex-1 flex overflow-hidden relative">
@@ -2179,7 +2212,7 @@ export default function Dashboard() {
                     setSelectedDocs((p) => { const n = new Set(p); ids.forEach((id) => n.delete(id)); return n; });
                   }}
                   onClose={() => setActivePanel(null)}
-                  onUpload={handleUpload}
+                  onUpload={(files) => { if (files?.length) setPendingUploadFiles(files); }}
                   onRefresh={loadDocs}
                   uploadProgress={uploadProgress}
                   uploading={uploading}
@@ -2236,6 +2269,77 @@ export default function Dashboard() {
           }
         }}
       />
+
+      <AnimatePresence>
+        {pendingUploadFiles && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+            onClick={() => setPendingUploadFiles(null)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              transition={{ duration: 0.15 }}
+              onClick={(e: any) => e.stopPropagation()}
+              className="bg-[#0C1217] border border-white/[0.08] rounded-2xl p-6 shadow-2xl shadow-black/60 max-w-sm w-full mx-4"
+            >
+              <h2 className="text-base font-semibold text-white text-center mb-1">Upload documents</h2>
+              <p className="text-xs text-[#9DAFAC]/50 text-center mb-5">
+                {pendingUploadFiles.length === 1
+                  ? `"${pendingUploadFiles[0]?.name}" — set document privacy level`
+                  : `${pendingUploadFiles.length} files — set document privacy level`}
+              </p>
+              <div className="flex flex-col gap-3">
+                <button
+                  type="button"
+                  onClick={() => startUpload(false)}
+                  className="flex items-center gap-3 px-4 py-3.5 rounded-xl bg-white/[0.03] border border-white/[0.08] hover:bg-[#3B82F6]/10 hover:border-[#3B82F6]/30 transition-all text-left"
+                >
+                  <div className="w-9 h-9 rounded-lg bg-[#3B82F6]/15 flex items-center justify-center shrink-0">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="11" cy="11" r="8" />
+                      <path d="m21 21-4.35-4.35" />
+                      <path d="M11 8v6" />
+                      <path d="M8 11h6" />
+                    </svg>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-semibold text-white">Research</div>
+                    <div className="text-[11px] text-[#9DAFAC]/50 mt-0.5">PII masking off — names and orgs stay searchable</div>
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => startUpload(true)}
+                  className="flex items-center gap-3 px-4 py-3.5 rounded-xl bg-white/[0.03] border border-white/[0.08] hover:bg-emerald-500/10 hover:border-emerald-500/30 transition-all text-left"
+                >
+                  <div className="w-9 h-9 rounded-lg bg-emerald-500/15 flex items-center justify-center shrink-0">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34D399" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                    </svg>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-semibold text-white">NDA</div>
+                    <div className="text-[11px] text-[#9DAFAC]/50 mt-0.5">PII masking on — names and contact info removed</div>
+                  </div>
+                </button>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPendingUploadFiles(null)}
+                className="w-full mt-3 py-2 text-xs text-[#9DAFAC]/50 hover:text-white/70 transition-colors text-center"
+              >
+                Cancel
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

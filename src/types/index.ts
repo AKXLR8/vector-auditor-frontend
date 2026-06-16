@@ -48,6 +48,7 @@ export interface Document {
   filename: string;
   status: string;
   has_pii: boolean;
+  privacy: boolean;
   sha256: string;
   cloudinary_url?: string;
   uploaded_by: string;
