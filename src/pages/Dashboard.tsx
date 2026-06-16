@@ -306,7 +306,8 @@ export default function Dashboard() {
   const [activePdf, setActivePdf] = useState<{ docId: string; citation: Citation; page: number; cloudinaryUrl?: string } | null>(null);
   const [activePanel, setActivePanel] = useState<"documents" | null>(null);
   const [plusOpen, setPlusOpen] = useState(false);
-  const [pendingUploadFiles, setPendingUploadFiles] = useState<File[] | null>(null);
+  const pendingUploadRef = useRef<File[] | null>(null);
+  const [showPrivacyDialog, setShowPrivacyDialog] = useState(false);
 
   const [chatSearch, setChatSearch] = useState("");
   const debouncedChatSearch = useDebounce(chatSearch, 120);
@@ -457,13 +458,18 @@ export default function Dashboard() {
   ]);
 
   const onDropFiles = (files: FileList | null) => {
-    if (files && files.length > 0) setPendingUploadFiles(Array.from(files));
+    if (files && files.length > 0) {
+      pendingUploadRef.current = Array.from(files);
+      setShowPrivacyDialog(true);
+    }
   };
 
   const startUpload = (privacy: boolean) => {
-    if (pendingUploadFiles) {
-      handleUpload(pendingUploadFiles, privacy);
-      setPendingUploadFiles(null);
+    const files = pendingUploadRef.current;
+    if (files && files.length > 0) {
+      handleUpload(files, privacy);
+      pendingUploadRef.current = null;
+      setShowPrivacyDialog(false);
     }
   };
 
@@ -1791,7 +1797,7 @@ export default function Dashboard() {
           />
         </div>
 
-        <input ref={fileInput} type="file" multiple accept=".pdf,.md,.txt,.docx" className="hidden" onChange={(e) => { const fs = e.target.files; if (fs?.length) setPendingUploadFiles(Array.from(fs)); e.target.value = ""; }} />
+        <input ref={fileInput} type="file" multiple accept=".pdf,.md,.txt,.docx" className="hidden" onChange={(e) => { const fs = e.target.files; if (fs?.length) { pendingUploadRef.current = Array.from(fs); setShowPrivacyDialog(true); } e.target.value = ""; }} />
 
         {/* ── Content Area ── */}
         <FileDropZone onFiles={onDropFiles} disabled={loading} className="flex-1 flex overflow-hidden relative">
@@ -2212,7 +2218,7 @@ export default function Dashboard() {
                     setSelectedDocs((p) => { const n = new Set(p); ids.forEach((id) => n.delete(id)); return n; });
                   }}
                   onClose={() => setActivePanel(null)}
-                  onUpload={(files) => { if (files?.length) setPendingUploadFiles(Array.from(files)); }}
+                  onUpload={(files) => { if (files?.length) { pendingUploadRef.current = Array.from(files); setShowPrivacyDialog(true); } }}
                   onRefresh={loadDocs}
                   uploadProgress={uploadProgress}
                   uploading={uploading}
@@ -2270,76 +2276,70 @@ export default function Dashboard() {
         }}
       />
 
-      <AnimatePresence>
-        {pendingUploadFiles && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-            onClick={() => setPendingUploadFiles(null)}
+      {showPrivacyDialog && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          onClick={() => { setShowPrivacyDialog(false); pendingUploadRef.current = null; }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-[#0C1217] border border-white/[0.08] rounded-2xl p-6 shadow-2xl shadow-black/60 max-w-sm w-full mx-4"
           >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              transition={{ duration: 0.15 }}
-              onClick={(e: any) => e.stopPropagation()}
-              className="bg-[#0C1217] border border-white/[0.08] rounded-2xl p-6 shadow-2xl shadow-black/60 max-w-sm w-full mx-4"
-            >
-              <h2 className="text-base font-semibold text-white text-center mb-1">Upload documents</h2>
-              <p className="text-xs text-[#9DAFAC]/50 text-center mb-5">
-                {pendingUploadFiles.length === 1
-                  ? `"${pendingUploadFiles[0]?.name}" — set document privacy level`
-                  : `${pendingUploadFiles.length} files — set document privacy level`}
-              </p>
-              <div className="flex flex-col gap-3">
-                <button
-                  type="button"
-                  onClick={() => startUpload(false)}
-                  className="flex items-center gap-3 px-4 py-3.5 rounded-xl bg-white/[0.03] border border-white/[0.08] hover:bg-[#3B82F6]/10 hover:border-[#3B82F6]/30 transition-all text-left"
-                >
-                  <div className="w-9 h-9 rounded-lg bg-[#3B82F6]/15 flex items-center justify-center shrink-0">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="11" cy="11" r="8" />
-                      <path d="m21 21-4.35-4.35" />
-                      <path d="M11 8v6" />
-                      <path d="M8 11h6" />
-                    </svg>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-semibold text-white">Research</div>
-                    <div className="text-[11px] text-[#9DAFAC]/50 mt-0.5">PII masking off — names and orgs stay searchable</div>
-                  </div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => startUpload(true)}
-                  className="flex items-center gap-3 px-4 py-3.5 rounded-xl bg-white/[0.03] border border-white/[0.08] hover:bg-emerald-500/10 hover:border-emerald-500/30 transition-all text-left"
-                >
-                  <div className="w-9 h-9 rounded-lg bg-emerald-500/15 flex items-center justify-center shrink-0">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34D399" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                    </svg>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-semibold text-white">NDA</div>
-                    <div className="text-[11px] text-[#9DAFAC]/50 mt-0.5">PII masking on — names and contact info removed</div>
-                  </div>
-                </button>
-              </div>
+            <h2 className="text-base font-semibold text-white text-center mb-1">Upload documents</h2>
+            <p className="text-xs text-[#9DAFAC]/50 text-center mb-5">
+              {(() => {
+                const n = pendingUploadRef.current?.length ?? 0;
+                return n === 1
+                  ? `"${pendingUploadRef.current![0]!.name}" — set document privacy level`
+                  : `${n} files — set document privacy level`;
+              })()}
+            </p>
+            <div className="flex flex-col gap-3">
               <button
                 type="button"
-                onClick={() => setPendingUploadFiles(null)}
-                className="w-full mt-3 py-2 text-xs text-[#9DAFAC]/50 hover:text-white/70 transition-colors text-center"
+                onClick={() => startUpload(false)}
+                className="flex items-center gap-3 px-4 py-3.5 rounded-xl bg-white/[0.03] border border-white/[0.08] hover:bg-[#3B82F6]/10 hover:border-[#3B82F6]/30 transition-all text-left"
               >
-                Cancel
+                <div className="w-9 h-9 rounded-lg bg-[#3B82F6]/15 flex items-center justify-center shrink-0">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="11" cy="11" r="8" />
+                    <path d="m21 21-4.35-4.35" />
+                    <path d="M11 8v6" />
+                    <path d="M8 11h6" />
+                  </svg>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-semibold text-white">Research</div>
+                  <div className="text-[11px] text-[#9DAFAC]/50 mt-0.5">PII masking off — names and orgs stay searchable</div>
+                </div>
               </button>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+              <button
+                type="button"
+                onClick={() => startUpload(true)}
+                className="flex items-center gap-3 px-4 py-3.5 rounded-xl bg-white/[0.03] border border-white/[0.08] hover:bg-emerald-500/10 hover:border-emerald-500/30 transition-all text-left"
+              >
+                <div className="w-9 h-9 rounded-lg bg-emerald-500/15 flex items-center justify-center shrink-0">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34D399" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                  </svg>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-semibold text-white">NDA</div>
+                  <div className="text-[11px] text-[#9DAFAC]/50 mt-0.5">PII masking on — names and contact info removed</div>
+                </div>
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={() => { setShowPrivacyDialog(false); pendingUploadRef.current = null; }}
+              className="w-full mt-3 py-2 text-xs text-[#9DAFAC]/50 hover:text-white/70 transition-colors text-center"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
