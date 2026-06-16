@@ -494,9 +494,10 @@ export default function Dashboard() {
   // Deduplicate documents by sha256 (keep most recent per unique content)
   const dedupedDocs = useMemo(() => {
     const seen = new Set<string>();
-    return docs.filter((d) => {
-      const key = (d as any).sha256 || (d.document_id ?? d.id);
-      if (seen.has(key)) return false;
+    return docs.filter((d): d is Document => {
+      if (!d) return false;
+      const key = d.sha256 || d.document_id || d.id;
+      if (!key || seen.has(key)) return false;
       seen.add(key);
       return true;
     });
@@ -1193,12 +1194,17 @@ export default function Dashboard() {
     }));
     try {
       const res = await uploadDocuments(files, privacy);
+      const uploaded = res?.uploaded_documents;
+      if (!Array.isArray(uploaded)) {
+        toast.error("Unexpected server response");
+        return;
+      }
       const progressMap: Record<string, { stage: string; progress: number }> = {};
       const optimistic: Document[] = [];
       const now = Date.now();
       let duplicates = 0;
       let willTrack = 0;
-      for (const item of res.uploaded_documents) {
+      for (const item of uploaded) {
         const status = (item.status || "").toLowerCase();
         if (status === "duplicate" || status === "skipped") {
           duplicates += 1;

@@ -394,7 +394,7 @@ export default function DocumentsPanel({ docs, groups, onGroupsChange, onDocsDel
           {docs.length === 0 && !uploading && (
             <p className="text-xs text-[#9DAFAC]/60 text-center py-6">No documents yet</p>
           )}
-          {docs.map((doc) => {
+          {docs.filter(Boolean).map((doc) => {
             const did = doc.document_id ?? doc.id;
             const name = docDisplayName(doc);
             const ext = docExt(name);
