@@ -306,8 +306,7 @@ export default function Dashboard() {
   const [activePdf, setActivePdf] = useState<{ docId: string; citation: Citation; page: number; cloudinaryUrl?: string } | null>(null);
   const [activePanel, setActivePanel] = useState<"documents" | null>(null);
   const [plusOpen, setPlusOpen] = useState(false);
-  const [appMode, setAppMode] = useLocalStorage<"research" | "nda">("app_mode", "research");
-  const uploadPrivacy = appMode === "nda";
+  const [uploadPrivacy, setUploadPrivacy] = useState(false);
 
   const [chatSearch, setChatSearch] = useState("");
   const debouncedChatSearch = useDebounce(chatSearch, 120);
@@ -1516,6 +1515,18 @@ export default function Dashboard() {
                   >
                     <FileText size={12} />
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => setUploadPrivacy((v) => !v)}
+                    className={`inline-flex items-center gap-1 h-5 px-1.5 rounded text-[9px] font-medium transition-all ${
+                      uploadPrivacy
+                        ? "bg-green-500/15 text-green-300"
+                        : "bg-white/[0.04] text-white/40"
+                    }`}
+                    title={uploadPrivacy ? "PII masking enabled (NDA mode)" : "No PII masking (research mode)"}
+                  >
+                    {uploadPrivacy ? "NDA" : "Research"}
+                  </button>
                   <button onClick={() => setSelectedDocs(new Set(dedupedDocs.map((d) => d.document_id ?? d.id)))}
                     className="text-[10px] text-[#3B82F6]/70 hover:text-[#3B82F6] transition-colors">All</button>
                   <button onClick={() => setSelectedDocs(new Set())}
@@ -1932,7 +1943,7 @@ export default function Dashboard() {
                         transition={{ duration: 0.4, delay: 0.05 }}
                         className="text-2xl sm:text-4xl font-bold text-white text-center leading-tight"
                       >
-                        {appMode === "nda" ? "Confidential documents?" : "Hi there. What would you like to explore?"}
+                        Hi there. What would you like to explore?
                       </motion.h1>
                       <motion.p
                         initial={{ opacity: 0, y: 8 }}
@@ -1940,56 +1951,8 @@ export default function Dashboard() {
                         transition={{ duration: 0.4, delay: 0.1 }}
                         className="text-xs sm:text-sm text-[#9DAFAC]/50 mt-2 text-center max-w-xs sm:max-w-none"
                       >
-                        {appMode === "nda"
-                          ? "PII masking is on. Names, orgs, and contact info will be removed from documents."
-                          : "Upload documents and ask questions — AI-powered citations included."}
+                        Upload documents and ask questions — AI-powered citations included.
                       </motion.p>
-
-                      {/* Big mode selector */}
-                      <motion.div
-                        initial={{ opacity: 0, y: 8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.4, delay: 0.13 }}
-                        className="mt-6"
-                      >
-                        <div className="inline-flex items-center rounded-xl bg-white/[0.04] border border-white/[0.08] p-1 gap-0">
-                          <button
-                            type="button"
-                            onClick={() => setAppMode("research")}
-                            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all ${
-                              appMode === "research"
-                                ? "bg-[#3B82F6] text-white shadow-lg shadow-[#3B82F6]/30"
-                                : "text-white/50 hover:text-white/80"
-                            }`}
-                          >
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <circle cx="11" cy="11" r="8" />
-                              <path d="m21 21-4.35-4.35" />
-                              <path d="M11 8v6" />
-                              <path d="M8 11h6" />
-                            </svg>
-                            Research
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setAppMode("nda")}
-                            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all ${
-                              appMode === "nda"
-                                ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/30"
-                                : "text-white/50 hover:text-white/80"
-                            }`}
-                          >
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                            </svg>
-                            NDA
-                          </button>
-                        </div>
-                        <p className="text-[10px] text-white/30 text-center mt-2">
-                          {appMode === "research" ? "PII masking off — names, orgs, and locations stay searchable" : "PII masking on — names, orgs, and contact info removed on upload"}
-                        </p>
-                      </motion.div>
 
                       {/* Suggested prompts - ChatGPT-style pills */}
                       <motion.div
@@ -2178,49 +2141,13 @@ export default function Dashboard() {
                         </div>
                       }
                       footerSlot={
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <div className="inline-flex items-center rounded-lg bg-white/[0.03] border border-white/[0.06] p-0.5">
-                            <button
-                              type="button"
-                              onClick={() => setAppMode("research")}
-                              className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium transition-all ${
-                                appMode === "research"
-                                  ? "bg-[#3B82F6] text-white"
-                                  : "text-white/50 hover:text-white/80"
-                              }`}
-                            >
-                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                <circle cx="11" cy="11" r="8" />
-                                <path d="m21 21-4.35-4.35" />
-                                <path d="M11 8v6" />
-                                <path d="M8 11h6" />
-                              </svg>
-                              Research
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setAppMode("nda")}
-                              className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium transition-all ${
-                                appMode === "nda"
-                                  ? "bg-emerald-500 text-white"
-                                  : "text-white/50 hover:text-white/80"
-                              }`}
-                            >
-                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                              </svg>
-                              NDA
-                            </button>
-                          </div>
-                          <QueryControls
-                            mode={queryMode}
-                            onModeChange={setQueryMode}
-                            model={activeModel}
-                            onModelChange={setActiveModel}
-                            disabled={loading}
-                          />
-                        </div>
+                        <QueryControls
+                          mode={queryMode}
+                          onModeChange={setQueryMode}
+                          model={activeModel}
+                          onModelChange={setActiveModel}
+                          disabled={loading}
+                        />
                       }
                     />
                     <p className="text-[10px] md:text-[11px] text-white/25 text-center mt-1.5 md:mt-2.5 px-2 leading-relaxed">
