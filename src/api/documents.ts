@@ -25,8 +25,6 @@ export async function uploadDocuments(files: File[], privacy = false): Promise<{
   const form = new FormData();
   files.forEach((f) => form.append("files", f));
   form.append("privacy", String(privacy));
-  const { data } = await client.post("/documents", form, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
+  const { data } = await client.post("/documents", form);
   return data;
 }

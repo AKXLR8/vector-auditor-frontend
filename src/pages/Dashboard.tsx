@@ -306,7 +306,7 @@ export default function Dashboard() {
   const [activePdf, setActivePdf] = useState<{ docId: string; citation: Citation; page: number; cloudinaryUrl?: string } | null>(null);
   const [activePanel, setActivePanel] = useState<"documents" | null>(null);
   const [plusOpen, setPlusOpen] = useState(false);
-  const [pendingUploadFiles, setPendingUploadFiles] = useState<FileList | null>(null);
+  const [pendingUploadFiles, setPendingUploadFiles] = useState<File[] | null>(null);
 
   const [chatSearch, setChatSearch] = useState("");
   const debouncedChatSearch = useDebounce(chatSearch, 120);
@@ -457,7 +457,7 @@ export default function Dashboard() {
   ]);
 
   const onDropFiles = (files: FileList | null) => {
-    if (files && files.length > 0) setPendingUploadFiles(files);
+    if (files && files.length > 0) setPendingUploadFiles(Array.from(files));
   };
 
   const startUpload = (privacy: boolean) => {
@@ -1146,7 +1146,7 @@ export default function Dashboard() {
     } catch { /* ignore */ }
   };
 
-  const handleUpload = async (files: FileList | null, privacy = false) => {
+  const handleUpload = async (files: File[] | null, privacy = false) => {
     if (!files?.length) return;
     const fileCount = files.length;
     setUploading(true);
@@ -1155,7 +1155,7 @@ export default function Dashboard() {
       _pending: { stage: "uploading", progress: 0 },
     }));
     try {
-      const res = await uploadDocuments(Array.from(files), privacy);
+      const res = await uploadDocuments(files, privacy);
       const progressMap: Record<string, { stage: string; progress: number }> = {};
       const optimistic: Document[] = [];
       const now = Date.now();
@@ -1791,7 +1791,7 @@ export default function Dashboard() {
           />
         </div>
 
-        <input ref={fileInput} type="file" multiple accept=".pdf,.md,.txt,.docx" className="hidden" onChange={(e) => { if (e.target.files?.length) setPendingUploadFiles(e.target.files); e.target.value = ""; }} />
+        <input ref={fileInput} type="file" multiple accept=".pdf,.md,.txt,.docx" className="hidden" onChange={(e) => { const fs = e.target.files; if (fs?.length) setPendingUploadFiles(Array.from(fs)); e.target.value = ""; }} />
 
         {/* ── Content Area ── */}
         <FileDropZone onFiles={onDropFiles} disabled={loading} className="flex-1 flex overflow-hidden relative">
@@ -2212,7 +2212,7 @@ export default function Dashboard() {
                     setSelectedDocs((p) => { const n = new Set(p); ids.forEach((id) => n.delete(id)); return n; });
                   }}
                   onClose={() => setActivePanel(null)}
-                  onUpload={(files) => { if (files?.length) setPendingUploadFiles(files); }}
+                  onUpload={(files) => { if (files?.length) setPendingUploadFiles(Array.from(files)); }}
                   onRefresh={loadDocs}
                   uploadProgress={uploadProgress}
                   uploading={uploading}
