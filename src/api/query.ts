@@ -25,7 +25,7 @@ export async function sendNexAGI(
     reasoning: true,
     max_tokens: maxTokens,
   });
-  return data.choices?.[0]?.message?.content ?? data.content ?? data.answer ?? "";
+  return data.content ?? "";
 }
 
 export async function sendQuery(req: QueryRequest): Promise<QueryResponse> {
