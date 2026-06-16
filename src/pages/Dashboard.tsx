@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback, useMemo, type FormEvent } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -17,6 +17,9 @@ import { QueryControls } from "../components/QueryControls";
 import { ScrollToBottom } from "../components/ScrollToBottom";
 import { ChatListSkeleton, DocListSkeleton, MessageSkeleton } from "../components/Skeleton";
 import { FileDropZone } from "../components/FileDropZone";
+import LeftNavRail from "../components/dashboard/LeftNavRail";
+import ChatListPanel from "../components/dashboard/ChatListPanel";
+import RightInfoPanel from "../components/dashboard/RightInfoPanel";
 import { OnboardingEmpty } from "../components/OnboardingEmpty";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { useDebounce } from "../hooks/useDebounce";
@@ -45,10 +48,9 @@ import type {
 import {
   PaperPlaneRight, Plus, FileText, X,
   ThumbsUp, ThumbsDown, User, SignOut,
-  Spinner, Robot, WarningCircle, ChatText,
-  Quotes, MagnifyingGlass, House,
-  Folder, PushPin, PencilSimple, Check, XCircle,
-  Command, Sparkle, List,
+  Spinner, Robot, WarningCircle,
+  Folder, Check, XCircle,
+  Sparkle, List,
 } from "@phosphor-icons/react";
 
 const GROUPS_KEY_PREFIX = "vector_doc_groups_";
@@ -313,6 +315,8 @@ export default function Dashboard() {
   const [docGroups, setDocGroups] = useState<DocGroup[]>(() => loadGroups(uid));
   const [selectedGroups, setSelectedGroups] = useState<Set<string>>(new Set());
   const [sidebarDragOverGroup, setSidebarDragOverGroup] = useState<string | null>(null);
+  const [activeNav, setActiveNav] = useState("chats");
+  const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(
     () => typeof window !== "undefined" && window.innerWidth >= 768
   );
@@ -385,7 +389,7 @@ export default function Dashboard() {
       setShowHamburger(true);
     }
   }, [sidebarOpen, isMobile]);
-  const hasOverlay = activePanel !== null || activePdf !== null;
+  const hasOverlay = activePdf !== null;
   useSwipeGesture({
     onSwipeRight: () => setSidebarOpen(true),
     onSwipeLeft: () => { if (sidebarOpen) setSidebarOpen(false); },
@@ -398,22 +402,22 @@ export default function Dashboard() {
   useEffect(() => {
     const onPopState = () => {
       if (sidebarOpen) { setSidebarOpen(false); return; }
-      if (activePanel === "documents") { setActivePanel(null); return; }
+      if (activeNav === "documents") { setActiveNav("chats"); return; }
       if (activePdf) { setActivePdf(null); return; }
     };
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
-  }, [sidebarOpen, activePanel, activePdf]);
+  }, [sidebarOpen, activeNav, activePdf]);
 
   // Push history state once when any overlay opens so back closes it first
   useEffect(() => {
-    const hasOverlay = sidebarOpen || activePanel === "documents" || !!activePdf;
+    const hasOverlay = sidebarOpen || !!activePdf;
     if (hasOverlay && !overlayStateRef.current) {
       overlayStateRef.current = "1";
       window.history.pushState(null, "");
     }
     if (!hasOverlay) overlayStateRef.current = null;
-  }, [sidebarOpen, activePanel, activePdf]);
+  }, [sidebarOpen, activePdf]);
 
   const mapServerMessages = (raw: any[]): Message[] =>
     (raw || []).map((m: any) => ({
@@ -472,7 +476,7 @@ export default function Dashboard() {
     { key: "/", ctrl: true, handler: () => fileInput.current?.click() },
     { key: "n", meta: true, handler: () => newChat(), allowInInputs: true },
     { key: "n", ctrl: true, handler: () => newChat(), allowInInputs: true },
-    { key: "Escape", handler: () => { if (paletteOpen) setPaletteOpen(false); if (activePanel === "documents") setActivePanel(null); if (activePdf) setActivePdf(null); } },
+    { key: "Escape", handler: () => { if (paletteOpen) setPaletteOpen(false); if (activeNav === "documents") setActiveNav("chats"); if (activePdf) setActivePdf(null); } },
   ]);
 
   const onDropFiles = (files: FileList | null) => {
@@ -524,6 +528,18 @@ export default function Dashboard() {
       toast.success(label);
     }
   }, []);
+
+  const handleSelectWorkspace = useCallback((groupId: string | null) => {
+    setActiveGroupId(groupId);
+    if (groupId === null) {
+      setSelectedDocs(new Set(dedupedDocs.map((d) => d.document_id ?? d.id)));
+    } else {
+      const group = docGroups.find((g) => g.id === groupId);
+      if (group) {
+        setSelectedDocs(new Set(group.documentIds));
+      }
+    }
+  }, [dedupedDocs, docGroups]);
 
   const { refetch, notify } = useDocumentSync({
     enabled: !!uid,
@@ -639,7 +655,7 @@ export default function Dashboard() {
   }, [uid, refetch]);
 
   useEffect(() => {
-    const open = activePanel !== null || activePdf !== null;
+    const open = activePdf !== null;
     if (open && sidebarOpen) {
       sidebarForcedClosedRef.current = true;
       setSidebarOpen(false);
@@ -647,7 +663,7 @@ export default function Dashboard() {
       sidebarForcedClosedRef.current = false;
       setSidebarOpen(true);
     }
-  }, [activePanel, activePdf]);
+  }, [activePdf]);
 
   const firstScrollDoneRef = useRef(false);
   useEffect(() => {
@@ -1329,68 +1345,55 @@ export default function Dashboard() {
   const renderSessionRow = (session: LocalSession) => {
     const isActive = activeSessionId === session.id;
     const isPinned = pinnedIds.includes(session.id);
-    const isEditing = editingSessionId === session.id;
+    const lastMsg = session.messages.filter((m) => m.role === "user").pop();
+    const preview = lastMsg
+      ? lastMsg.content.length > 50
+        ? lastMsg.content.slice(0, 50) + "..."
+        : lastMsg.content
+      : "No messages yet";
+    const time = session.createdAt
+      ? new Date(session.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+      : "";
     return (
       <div
         key={session.id}
-        onClick={() => { if (!isEditing) { switchToSession(session); if (isMobile) setSidebarOpen(false); } }}
-        className={`group relative flex items-center gap-1.5 px-2.5 py-2.5 sm:py-2 rounded-xl cursor-pointer transition-[colors,opacity] duration-200 ml-1 ${
+        onClick={() => { switchToSession(session); if (isMobile) setSidebarOpen(false); }}
+        className={`group flex items-center gap-3 px-3 py-2.5 rounded-2xl cursor-pointer transition-all duration-150 ${
           isActive
-            ? "bg-white/[0.07] border border-white/[0.1]"
-            : "hover:bg-white/[0.04] border border-transparent"
+            ? "bg-[rgba(59,130,246,0.06)] border border-[rgba(59,130,246,0.08)]"
+            : "hover:bg-[rgba(255,255,255,0.03)] border border-transparent"
         }`}
       >
-        {isPinned && !isActive && <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-r bg-[#3B82F6]/60" />}
-        {isEditing ? (
-          <input
-            autoFocus
-            value={editingSessionTitle}
-            onChange={(e) => setEditingSessionTitle(e.target.value)}
-            onClick={(e) => e.stopPropagation()}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") renameSession(session.id, editingSessionTitle);
-              if (e.key === "Escape") setEditingSessionId(null);
-            }}
-            onBlur={() => renameSession(session.id, editingSessionTitle)}
-            className="flex-1 min-w-0 bg-white/[0.06] border border-[#3B82F6]/30 rounded px-1.5 py-0.5 text-xs text-white outline-none"
-          />
-        ) : (
-          <span className={`flex-1 min-w-0 truncate text-xs ${isActive ? "text-white font-medium" : "text-[#F2F2F2]/70"}`}>
-            {session.title}
-          </span>
-        )}
-        <div className="flex items-center gap-0.5 shrink-0 opacity-100">
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); togglePin(session.id); }}
-            aria-label={isPinned ? "Unpin" : "Pin"}
-            title={isPinned ? "Unpin" : "Pin"}
-            className={`hidden sm:flex w-5 h-5 rounded items-center justify-center transition-colors ${
-              isPinned ? "text-[#3B82F6]" : "text-white/30 hover:text-white/60"
-            }`}
-          >
-            <PushPin size={10} weight={isPinned ? "fill" : "regular"} />
-          </button>
-          {!isEditing && (
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); setEditingSessionId(session.id); setEditingSessionTitle(session.title); }}
-              aria-label="Rename"
-              title="Rename"
-              className="hidden sm:flex w-5 h-5 rounded items-center justify-center text-white/30 hover:text-white/60"
-            >
-              <PencilSimple size={10} />
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); deleteSession(session.id, e); }}
-            aria-label="Delete chat"
-            title="Delete chat"
-            className="w-6 h-6 sm:w-5 sm:h-5 rounded flex items-center justify-center text-white/40 hover:text-red-400 active:text-red-400 transition-colors"
-          >
-            <X size={12} />
-          </button>
+        {/* Avatar */}
+        <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 text-sm ${
+          session.title.toLowerCase().includes("nda")
+            ? "bg-red-500/15 text-red-400"
+            : session.title.toLowerCase().includes("contract") || session.title.toLowerCase().includes("risk")
+            ? "bg-amber-500/15 text-amber-400"
+            : session.title.toLowerCase().includes("research")
+            ? "bg-blue-500/15 text-blue-400"
+            : session.title.toLowerCase().includes("hr") || session.title.toLowerCase().includes("policy")
+            ? "bg-emerald-500/15 text-emerald-400"
+            : "bg-[#151515] text-[#6B7280]"
+        }`}>
+          {session.title.slice(0, 2).toUpperCase()}
+        </div>
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between gap-2">
+            <span className={`text-sm truncate ${isActive ? "text-white font-medium" : "text-[#D1D5DB]"}`}>
+              {session.title}
+            </span>
+            <span className="text-[10px] text-[#6B7280] shrink-0">{time}</span>
+          </div>
+          <div className="flex items-center gap-2 mt-0.5">
+            <span className="text-xs text-[#6B7280] truncate flex-1">{preview}</span>
+            {isPinned && (
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="#6B7280" className="shrink-0">
+                <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z" />
+              </svg>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -1436,7 +1439,22 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="h-screen flex overflow-hidden bg-[#070E0D] text-[#F2F2F2]">
+    <div className="h-screen flex overflow-hidden bg-[#090909] text-[#F2F2F2]">
+      {/* Left Nav Rail */}
+      <LeftNavRail
+        activeNav={activeNav}
+        onNavChange={(id) => {
+          setActiveNav(id);
+          if (id === "documents") {
+            setActivePdf(null);
+          } else if (id === "analytics") {
+            navigate("/analysis");
+          }
+        }}
+        onAddCollection={() => setActiveNav("documents")}
+        username={accountName}
+      />
+
       {/* Mobile overlay */}
       <AnimatePresence>
         {sidebarOpen && (
@@ -1452,407 +1470,92 @@ export default function Dashboard() {
         )}
       </AnimatePresence>
 
-      {/* ── Unified Sidebar (Chats + Documents) ── */}
-      <aside
-        className={`fixed top-0 md:top-3 bottom-0 md:bottom-3 left-0 md:left-3 z-30 w-screen md:w-[300px] flex flex-col overflow-hidden liquid-glass-sidebar safe-area-top safe-area-bottom transition-transform duration-200 ease-out ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
-      >
-        {/* Logo + mobile close + Analysis */}
-        <div className="flex items-center gap-2 px-4 pt-5 md:pt-4 pb-1 shrink-0">
-          <img src="/logo.png" alt="Logo" className="w-16 h-16 md:w-14 md:h-14 object-contain" />
-          <span className="text-sm font-semibold tracking-tight text-white/80">Vector Auditor</span>
-          <button
-            type="button"
-            onClick={() => navigate("/analysis")}
-            className="ml-auto inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-medium bg-[#3B82F6]/10 text-[#60A5FA] border border-[#3B82F6]/20 hover:bg-[#3B82F6]/20 transition-colors"
-          >
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 2L2 7l10 5 10-5-10-5z" />
-              <path d="M2 17l10 5 10-5" />
-              <path d="M2 12l10 5 10-5" />
-            </svg>
-            Analysis
-          </button>
-          <button
-            type="button"
-            onClick={() => setSidebarOpen(false)}
-            aria-label="Close sidebar"
-            className="md:hidden w-10 h-10 rounded-xl flex items-center justify-center text-white/40 hover:text-white hover:bg-white/[0.06] transition-colors"
-          >
-            <X size={18} />
-          </button>
-        </div>
-
-        {/* Search + command palette trigger */}
-        <div className="px-3 pt-2 pb-2 shrink-0 space-y-2">
-          <div className="flex items-center gap-2">
-            <div className="flex-1 flex items-center gap-2 px-3 h-9 rounded-xl bg-white/[0.04] border border-white/[0.06] text-sm transition-[colors] duration-200 focus-within:border-[#3B82F6]/30 focus-within:bg-white/[0.06]">
-              <MagnifyingGlass size={14} className="shrink-0 text-white/40" />
-              <input
-                value={chatSearch}
-                onChange={(e) => setChatSearch(e.target.value)}
-                placeholder="Filter chats..."
-                aria-label="Filter chats"
-                className="flex-1 min-w-0 bg-transparent text-white placeholder:text-white/30 text-sm outline-none"
-              />
-              {chatSearch && (
-                <button
-                  type="button"
-                  onClick={() => setChatSearch("")}
-                  aria-label="Clear filter"
-                  className="text-white/30 hover:text-white/60 transition-colors shrink-0"
-                >
-                  <XCircle size={13} weight="fill" />
-                </button>
-              )}
-            </div>
-            <button
-              type="button"
-              onClick={() => setPaletteOpen(true)}
-              aria-label="Open command palette"
-              title="Command palette (⌘K)"
-              className="w-9 h-9 rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center text-white/40 hover:text-white hover:bg-white/[0.06] transition-[colors] duration-200"
-            >
-              <Command size={14} weight="bold" />
-            </button>
-          </div>
-        </div>
-
-        {/* Menu items */}
-        <div className="px-3 space-y-1 shrink-0">
-          <button onClick={() => { newChat(); if (isMobile) setSidebarOpen(false); }}
-            className="w-full flex items-center justify-center gap-2 h-10 rounded-xl text-sm font-semibold text-white transition-[colors,transform] duration-300 active:scale-[0.97]"
-            style={{ background: "linear-gradient(135deg, #3B82F6, #1E3A5F)" }}
-          >
-            <Plus size={15} weight="bold" />
-            New Chat
-          </button>
-
-        </div>
-
-        <div className="px-3 py-2 shrink-0">
-          <div className="border-t border-white/[0.06]" />
-        </div>
-
-        <div className="flex-1 min-h-0 overflow-y-auto px-3 py-2 space-y-2 scrollbar-thin">
-          {/* ── Chats section ── */}
-          <div>
-            <div className="flex items-center gap-2 px-1 py-1">
-              <ChatText size={14} className="text-[#9DAFAC]/60" />
-              <span className="flex-1 text-sm font-medium text-[#9DAFAC]/80">Chats</span>
-              <span className="text-[10px] text-[#9DAFAC]/40 font-mono">{sessions.length}</span>
-            </div>
-
-            {!chatSearch && sessions.length === 0 && (
-              <OnboardingEmpty variant="no-chats" onAction={newChat} />
-            )}
-
-            {chatSearch && filteredSessions.length === 0 && sessions.length > 0 && (
-              <OnboardingEmpty variant="no-search-results" searchQuery={chatSearch} />
-            )}
-
-            {pinnedSessions.length > 0 && (
-              <div className="mb-1.5">
-                <p className="px-1 py-1 text-[10px] uppercase tracking-wider text-[#9DAFAC]/40 font-medium flex items-center gap-1">
-                  <PushPin size={9} weight="fill" /> Pinned
-                </p>
-            <div className="space-y-0.5 virtual-list">
-                  {pinnedSessions.map((session) => renderSessionRow(session))}
-                </div>
-              </div>
-            )}
-
-            {otherSessions.length > 0 && (
-              <div className="space-y-0.5">
-                {pinnedSessions.length > 0 && (
-                  <p className="px-1 py-1 text-[10px] uppercase tracking-wider text-[#9DAFAC]/40 font-medium">
-                    All chats
-                  </p>
-                )}
-                {otherSessions.map((session) => renderSessionRow(session))}
+      {activeNav === "documents" ? (
+        /* ── Immersive Document Library View ── */
+        <div className="flex-1 flex min-w-0 relative bg-[#090909]">
+          <div className="flex-1 flex overflow-hidden">
+            <DocumentsPanel
+              docs={dedupedDocs}
+              groups={docGroups}
+              onGroupsChange={(g) => { setDocGroups(g); }}
+              onDocsDeleted={(ids) => {
+                const idSet = new Set(ids);
+                setDocs((p) => p.filter((d) => !idSet.has(d.document_id ?? d.id)));
+                setDocGroups((prev) => prev.map((g) => ({ ...g, documentIds: g.documentIds.filter((d) => !idSet.has(d)) })));
+                setSelectedDocs((p) => { const n = new Set(p); ids.forEach((id) => n.delete(id)); return n; });
+              }}
+              onClose={() => setActiveNav("chats")}
+              onUpload={(files) => { if (files?.length) { pendingUploadRef.current = Array.from(files); setShowPrivacyDialog(true); } }}
+              onRefresh={loadDocs}
+              uploadProgress={uploadProgress}
+              uploading={uploading}
+            />
+            {activePdf && (
+              <div className="hidden md:block w-1/2 border-l border-white/[0.06] bg-[#090909] flex-col overflow-hidden shrink-0 min-w-0">
+                <DocumentViewer
+                  docId={activePdf.docId}
+                  citation={activePdf.citation}
+                  page={activePdf.page}
+                  cloudinaryUrl={activePdf.cloudinaryUrl}
+                  onClose={() => { setActivePdf(null); }}
+                />
               </div>
             )}
           </div>
-
-          {/* ── Documents section ── */}
-          <div>
-            <div className="flex items-center justify-between px-1 py-1">
-              <button onClick={() => { setActivePanel("documents"); setActivePdf(null); }} className="flex items-center gap-1.5 text-sm font-medium text-[#9DAFAC]/80 hover:text-[#3B82F6] transition-[colors] duration-300">
-                <FileText size={14} /> Documents <span className="font-normal text-xs text-[#9DAFAC]/40">{docsLoading ? <Spinner size={10} className="animate-spin inline" /> : `(${dedupedDocs.length})`}</span>
-              </button>
-              {dedupedDocs.length > 0 && (
-                <div className="flex items-center gap-1.5">
-                   <button
-                    onClick={() => fileInput.current?.click()}
-                    title="Upload document"
-                    className="w-6 h-6 rounded-md hover:bg-white/[0.06] flex items-center justify-center text-[#9DAFAC]/50 hover:text-[#9DAFAC]/80 transition-colors"
-                  >
-                    <FileText size={12} />
-                  </button>
-                  <button onClick={() => setSelectedDocs(new Set(dedupedDocs.map((d) => d.document_id ?? d.id)))}
-                    className="text-[10px] text-[#3B82F6]/70 hover:text-[#3B82F6] transition-colors">All</button>
-                  <button onClick={() => setSelectedDocs(new Set())}
-                    className="text-[10px] text-[#9DAFAC]/50 hover:text-[#9DAFAC]/80 transition-colors">None</button>
-                </div>
-              )}
-            </div>
-            {/* Upload progress */}
-            {(uploading || Object.keys(uploadProgress).length > 0) && (
-              <div className="px-2.5 py-2 mb-2 rounded-xl bg-white/[0.03] border border-white/[0.04] space-y-1">
-                {(() => {
-                  const entries = Object.entries(uploadProgress).filter(([k]) => k !== "_pending");
-                  const total = entries.length || 1;
-                  const completed = entries.filter(([, v]) => v.stage === "completed").length;
-                  const failed = entries.filter(([, v]) => v.stage === "failed").length;
-                  const avgProg = entries.length > 0
-                    ? entries.reduce((s, [, v]) => s + v.progress, 0) / entries.length
-                    : 0;
-                  const pending = entries.filter(([, v]) => !TERMINAL_STAGES.has(v.stage)).length;
-                  if (entries.length === 0 && !uploading) return null;
-                  const label = uploadProgress._pending
-                    ? "Starting upload..."
-                    : failed > 0
-                    ? `${failed} failed`
-                    : pending > 0
-                    ? `${pending} doc${pending > 1 ? "s" : ""} uploading`
-                    : `${completed} done`;
-                  const pct = uploadProgress._pending ? 0 : avgProg;
-                  return (
-                    <>
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-[#9DAFAC]/70">{label}</span>
-                        <span className="text-[#9DAFAC]/50 font-mono">{Math.round(pct)}%</span>
-                      </div>
-                      <div className="w-full h-1 rounded-full bg-white/[0.06] overflow-hidden">
-                        <motion.div
-                          initial={{ scaleX: 0 }}
-                          animate={{ scaleX: pct / 100 }}
-                          transition={{ duration: 0.5, ease: "easeOut" }}
-                          style={{ transformOrigin: "left" }}
-                          className={`h-full rounded-full will-change-[transform] ${
-                            failed > 0
-                              ? "bg-red-500"
-                              : pending === 0
-                              ? "bg-green-500"
-                              : "bg-gradient-to-r from-[#3B82F6] to-[#1E3A5F]"
-                          }`}
-                        />
-                      </div>
-                    </>
-                  );
-                })()}
-              </div>
-            )}
-            {/* ── Groups ── */}
-            {docGroups.length > 0 && (
-              <div className="space-y-0.5 mb-2">
-                <div className="flex items-center justify-between px-1 py-1">
-                  <span className="text-sm font-medium text-[#9DAFAC]/80">Groups</span>
-                  <span className="text-[10px] text-[#9DAFAC]/50 font-mono">{docGroups.length}</span>
-                </div>
-                {docGroups.map((group) => {
-                  const allSelected = group.documentIds.length > 0 && group.documentIds.every((did) => selectedDocs.has(did));
-                  return (
-                    <div key={group.id} data-sidebar-group={group.id}
-                      className={`group flex items-center gap-2 px-2.5 py-2.5 sm:py-2 rounded-xl text-sm transition-[colors] duration-300 cursor-pointer ${
-                        sidebarDragOverGroup === group.id
-                          ? "bg-[#3B82F6]/10 border border-[#3B82F6]/30"
-                          : "hover:bg-white/[0.03]"
-                      }`}
-                      onClick={() => toggleGroupSelection(group)}
-                      onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; setSidebarDragOverGroup(group.id); }}
-                      onDragEnter={(e) => { e.preventDefault(); setSidebarDragOverGroup(group.id); }}
-                      onDragLeave={() => setSidebarDragOverGroup(null)}
-                      onDrop={(e) => { e.preventDefault(); setSidebarDragOverGroup(null); const did = e.dataTransfer.getData("text/plain"); if (did) sidebarAddDocToGroup(group.id, did); }}
-                      onTouchMove={(e) => { const touch = e.changedTouches[0]; const el = document.elementFromPoint(touch.clientX, touch.clientY); if (el && el.closest("[data-sidebar-group]")) setSidebarDragOverGroup(group.id); else setSidebarDragOverGroup(null); }}
-                      onTouchEnd={() => { setSidebarDragOverGroup(null); const did = touchDragDocRef.current; if (did) { touchDragDocRef.current = null; sidebarAddDocToGroup(group.id, did); } }}
-                    >
-                      <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors ${allSelected ? "bg-[#3B82F6] border-[#3B82F6]" : "border-white/[0.15]"}`}>
-                        {allSelected && (
-                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="20 6 9 17 4 12" />
-                          </svg>
-                        )}
-                      </div>
-                      <Folder size={14} className={`shrink-0 ${allSelected ? "text-[#3B82F6]" : "text-[#9DAFAC]/60"}`} />
-                      <span className={`flex-1 min-w-0 truncate text-xs ${allSelected ? "text-white" : "text-[#9DAFAC]/70"}`}>{group.name}</span>
-                      <span className="text-[10px] text-[#9DAFAC]/50 font-mono">{group.documentIds.length}</span>
-                    </div>
-                  );
-                })}
-                <div className="border-t border-white/[0.06] my-2" />
-              </div>
-            )}
-            <div className="space-y-0.5">
-              {docsLoading ? (
-                <DocListSkeleton />
-              ) : dedupedDocs.length === 0 ? (
-                <OnboardingEmpty variant="no-docs" onAction={() => fileInput.current?.click()} />
-              ) : (
-                <>
-                  {dedupedDocs.length >= 5 && (
-                    <div className="px-1 pt-1 pb-1.5">
-                      <div className="flex items-center gap-2 px-2.5 h-7 rounded-lg bg-white/[0.03] border border-white/[0.04] focus-within:border-white/[0.1]">
-                        <MagnifyingGlass size={11} className="text-white/30 shrink-0" />
-                        <input
-                          value={docSearch}
-                          onChange={(e) => setDocSearch(e.target.value)}
-                          placeholder="Filter documents..."
-                          className="flex-1 min-w-0 bg-transparent text-[11px] text-white placeholder:text-white/30 outline-none"
-                        />
-                        {docSearch && (
-                          <button onClick={() => setDocSearch("")} aria-label="Clear" className="text-white/30 hover:text-white/60">
-                            <XCircle size={11} weight="fill" />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                  {docSearch && filteredDocs.length === 0 && (
-                    <OnboardingEmpty variant="no-search-results" searchQuery={docSearch} />
-                  )}
-                  {(() => {
-                    const researchDocs = filteredDocs.filter((d) => !d.privacy);
-                    const ndaDocs = filteredDocs.filter((d) => d.privacy);
-                    const renderDoc = (doc: Document) => {
-                      const did = doc.document_id ?? doc.id;
-                      const name = docDisplayName(doc);
-                      const ext = docExt(name);
-                      const statusKey = docStatusKey(doc);
-                      const pill = DOC_STATUS_PILL[statusKey];
-                      const isSelected = selectedDocs.has(did);
-                      return (
-                        <div key={did}
-                          draggable
-                          onDragStart={(e) => sidebarHandleDragStart(e, did)}
-                          onTouchStart={() => { touchDragDocRef.current = did; }}
-                          onTouchEnd={() => { touchDragDocRef.current = null; }}
-                          title={name}
-                          className="group flex items-center gap-2 px-2.5 py-3 md:py-2 rounded-xl text-sm hover:bg-white/[0.03] transition-[colors] duration-200 cursor-pointer active:bg-white/[0.05]"
-                          onClick={() => toggleDoc(did)}
-                        >
-                          <div className={`w-4 h-4 md:w-4 md:h-4 rounded border flex items-center justify-center shrink-0 transition-colors ${isSelected ? "bg-[#3B82F6] border-[#3B82F6]" : "border-white/[0.15]"}`}>
-                            {isSelected && (
-                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                                <polyline points="20 6 9 17 4 12" />
-                              </svg>
-                            )}
-                          </div>
-                          <FileText size={14} className={`shrink-0 ${isSelected ? "text-[#3B82F6]" : "text-[#9DAFAC]/60"}`} />
-                          <span className={`flex-1 min-w-0 truncate text-xs ${isSelected ? "text-white" : "text-[#9DAFAC]/70"}`}>{name}</span>
-                          <span className={`text-[9px] px-1 py-0.5 rounded shrink-0 mr-0.5 ${doc.privacy ? "bg-emerald-500/15 text-emerald-400/80" : "bg-[#3B82F6]/15 text-[#60A5FA]/80"}`}>
-                            {doc.privacy ? "NDA" : "Research"}
-                          </span>
-                          {statusKey === "processing" ? (
-                            <Spinner size={10} className="animate-spin text-[#3B82F6] shrink-0" />
-                          ) : (
-                            <span className={`text-[10px] px-1.5 py-0.5 rounded shrink-0 ${pill.cls}`}>
-                              {ext ? `${ext} · ${pill.label}` : pill.label}
-                            </span>
-                          )}
-                          <button onClick={(e) => {
-                            e.stopPropagation();
-                            setConfirmDeleteId(did);
-                          }}
-                            disabled={deletingIds.has(did)}
-                            className="w-6 h-6 rounded hover:bg-red-500/10 flex items-center justify-center text-[#9DAFAC]/50 hover:text-red-400 transition-[colors,opacity] shrink-0 opacity-60 md:opacity-0 group-hover:opacity-100 disabled:opacity-100 disabled:cursor-not-allowed"
-                            title="Delete">
-                            {deletingIds.has(did) ? <Spinner size={10} className="animate-spin" /> : <X size={11} />}
-                          </button>
-                        </div>
-                      );
-                    };
-                    return (
-                      <>
-                        {researchDocs.length > 0 && (
-                          <>
-                            <div className="flex items-center gap-1.5 px-1 py-1 mt-1">
-                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-[#60A5FA]">
-                                <circle cx="11" cy="11" r="8" />
-                                <path d="m21 21-4.35-4.35" />
-                              </svg>
-                              <span className="text-[10px] font-medium text-[#9DAFAC]/60">Research</span>
-                              <span className="text-[9px] text-[#9DAFAC]/40 font-mono">{researchDocs.length}</span>
-                            </div>
-                            {researchDocs.map(renderDoc)}
-                          </>
-                        )}
-                        {ndaDocs.length > 0 && (
-                          <>
-                            <div className="flex items-center gap-1.5 px-1 py-1 mt-1">
-                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-400">
-                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                              </svg>
-                              <span className="text-[10px] font-medium text-[#9DAFAC]/60">NDA</span>
-                              <span className="text-[9px] text-[#9DAFAC]/40 font-mono">{ndaDocs.length}</span>
-                            </div>
-                            {ndaDocs.map(renderDoc)}
-                          </>
-                        )}
-                      </>
-                    );
-                  })()}
-                </>
-              )}
-            </div>
-          </div>
         </div>
-
-        {/* Profile section */}
-        <div className="border-t border-white/[0.06] shrink-0">
-          <div className="flex items-center gap-2.5 px-3 py-2">
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-white/80 truncate leading-tight">{accountName}</p>
-            </div>
-          </div>
-          {isAdmin && (
-            <Link to="/admin" className="flex items-center gap-2 px-3 py-1.5 text-xs text-[#3B82F6]/70 hover:bg-white/[0.03] transition-colors">Admin Panel</Link>
-          )}
-          <Link to="/" onClick={() => { if (isMobile) setSidebarOpen(false); }} className="w-full flex items-center justify-center gap-2 py-2 text-xs text-[#9DAFAC]/50 hover:text-[#3B82F6] hover:bg-[#3B82F6]/5 transition-[colors] duration-300">
-            <House size={13} />
-            Home
-          </Link>
-          <button onClick={() => { logoutAndReset(); if (isMobile) setSidebarOpen(false); }}
-            className="w-full flex items-center justify-center gap-2 py-2 text-xs text-[#9DAFAC]/50 hover:text-red-400 hover:bg-red-500/5 transition-[colors] duration-300"
+      ) : (
+        /* ── Chat View ── */
+        <>
+          {/* Chat List Panel — desktop always visible, mobile slide-over */}
+          <div
+            className={`fixed md:relative top-0 left-0 bottom-0 z-30 transition-transform duration-200 ease-out md:translate-x-0 ${
+              sidebarOpen ? "translate-x-0" : "-translate-x-full"
+            }`}
           >
-            <SignOut size={13} />
-            Sign Out
-          </button>
-        </div>
-      </aside>
+            <ChatListPanel
+              sessions={sessions}
+              filteredSessions={filteredSessions}
+              pinnedSessions={pinnedSessions}
+              otherSessions={otherSessions}
+              activeSessionId={activeSessionId}
+              chatSearch={chatSearch}
+              onChatSearch={setChatSearch}
+              onNewChat={() => { newChat(); if (isMobile) setSidebarOpen(false); }}
+              renderSessionRow={renderSessionRow}
+            />
+          </div>
 
-      {/* ── Main Content ── */}
-      <main className="flex-1 flex flex-col min-w-0 relative main-content-area">
-        {/* Static background gradient (no video — mobile perf) */}
+      {/* ── Main Chat Area ── */}
+      <main className="flex-1 flex min-w-0 relative">
+        <div className="flex-1 flex flex-col min-w-0 relative">
+        {/* Static background gradient */}
         <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
           <div
             className="w-full h-full"
             style={{
               background:
-                "radial-gradient(ellipse at 50% 35%, rgba(30,58,95,0.55) 0%, rgba(7,14,13,0.0) 60%), linear-gradient(180deg, #070E0D 0%, #050A0A 100%)",
+                "radial-gradient(ellipse at 50% 35%, rgba(59,130,246,0.03) 0%, transparent 60%), linear-gradient(180deg, #090909 0%, #0A0A0A 100%)",
             }}
           />
         </div>
-        {/* Animated glow blobs — desktop only (kills mobile perf) */}
+        {/* Animated glow blobs — desktop only */}
         <div className="hidden md:block absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
-          <div className="absolute -top-40 -right-40 w-[800px] h-[800px] rounded-full bg-[#3B82F6] opacity-[0.04]"
+          <div className="absolute -top-40 -right-40 w-[800px] h-[800px] rounded-full bg-[#3B82F6] opacity-[0.02]"
                style={{ filter: "blur(120px)" }} />
-          <div className="absolute -bottom-40 -left-40 w-[700px] h-[700px] rounded-full bg-[#1E3A5F] opacity-[0.1]"
+          <div className="absolute -bottom-40 -left-40 w-[700px] h-[700px] rounded-full bg-[#3B82F6] opacity-[0.03]"
                style={{ filter: "blur(140px)" }} />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[600px] rounded-full bg-[#3B82F6] opacity-[0.03]"
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[600px] rounded-full bg-[#3B82F6] opacity-[0.015]"
                style={{ filter: "blur(180px)" }} />
           <motion.div
             animate={{ x: [0, 30, -20, 0], y: [0, -20, 30, 0] }}
             transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute top-1/3 right-1/4 w-[400px] h-[400px] rounded-full bg-[#3B82F6]/[0.03]"
+            className="absolute top-1/3 right-1/4 w-[400px] h-[400px] rounded-full bg-[#3B82F6]/[0.02]"
             style={{ filter: "blur(80px)" }}
           />
           <motion.div
             animate={{ x: [0, -25, 20, 0], y: [0, 30, -15, 0] }}
             transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute bottom-1/3 left-1/4 w-[350px] h-[350px] rounded-full bg-[#1E3A5F]/[0.08]"
+            className="absolute bottom-1/3 left-1/4 w-[350px] h-[350px] rounded-full bg-[#3B82F6]/[0.04]"
             style={{ filter: "blur(100px)" }}
           />
         </div>
@@ -2227,7 +1930,7 @@ export default function Dashboard() {
                                     {dedupedDocs.length === 0 ? "Upload Document" : "Upload"}
                                   </button>
                                   <button
-                                    onClick={() => { setActivePanel("documents"); setPlusOpen(false); }}
+                                    onClick={() => { setActiveNav("documents"); setPlusOpen(false); }}
                                     className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-white/[0.06] text-xs text-white/70 hover:text-white transition-colors text-left"
                                   >
                                     <Folder size={13} />
@@ -2257,36 +1960,9 @@ export default function Dashboard() {
               </>
             </div>
 
-          {/* ── Right overlay: Documents panel / PDF viewer ── */}
-            {activePanel === "documents" && (
-              <motion.aside
-                key="docs-panel"
-                initial={{ clipPath: "inset(0 100% 0 0)", opacity: 0 }}
-                animate={{ clipPath: "inset(0 0% 0 0)", opacity: 1 }}
-                exit={{ clipPath: "inset(0 100% 0 0)", opacity: 0 }}
-                transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                className="w-full md:w-1/2 border-l border-white/[0.06] bg-[#070E0D] flex flex-col overflow-hidden shrink-0 min-w-0 relative z-20 will-change-[clip-path]"
-              >
-                <DocumentsPanel
-                  docs={dedupedDocs}
-                  groups={docGroups}
-                  onGroupsChange={(g) => { setDocGroups(g); }}
-                  onDocsDeleted={(ids) => {
-                    const idSet = new Set(ids);
-                    setDocs((p) => p.filter((d) => !idSet.has(d.document_id ?? d.id)));
-                    setDocGroups((prev) => prev.map((g) => ({ ...g, documentIds: g.documentIds.filter((d) => !idSet.has(d)) })));
-                    setSelectedDocs((p) => { const n = new Set(p); ids.forEach((id) => n.delete(id)); return n; });
-                  }}
-                  onClose={() => setActivePanel(null)}
-                  onUpload={(files) => { if (files?.length) { pendingUploadRef.current = Array.from(files); setShowPrivacyDialog(true); } }}
-                  onRefresh={loadDocs}
-                  uploadProgress={uploadProgress}
-                  uploading={uploading}
-                />
-              </motion.aside>
-            )}
+          {/* ── PDF viewer overlay ── */}
             {activePdf && (
-              <div className="w-full md:w-1/2 border-l border-white/[0.06] bg-[#070E0D] flex flex-col overflow-hidden shrink-0 min-w-0 relative z-20">
+              <div className="w-full md:w-1/2 border-l border-white/[0.06] bg-[#090909] flex flex-col overflow-hidden shrink-0 min-w-0 relative z-20">
                 <DocumentViewer
                   docId={activePdf.docId}
                   citation={activePdf.citation}
@@ -2298,8 +1974,27 @@ export default function Dashboard() {
             )}
           </div>
         </FileDropZone>
+        </div>
+        <RightInfoPanel
+          documents={dedupedDocs}
+          selectedDocs={selectedDocs}
+          onToggleDoc={toggleDoc}
+          onSummarize={() => {
+            if (selectedDocs.size === 0) { toast.error("Select at least one document"); return; }
+            runQuery("Summarize the key points from the selected documents.");
+          }}
+          onCompare={() => {
+            if (selectedDocs.size < 2) { toast.error("Select at least two documents to compare"); return; }
+            runQuery("Compare the selected documents and highlight their key differences and similarities.");
+          }}
+          onGenerateReport={() => navigate("/analysis")}
+          onExportCitations={() => {
+            const citCount = messages.reduce((sum, m) => sum + (m.citations?.length || 0), 0);
+            toast.success(`Exported ${citCount} citations`, { icon: "📋" });
+          }}
+        />
       </main>
-
+      </>)}
       <CommandPalette
         open={paletteOpen}
         onClose={() => setPaletteOpen(false)}
@@ -2311,7 +2006,7 @@ export default function Dashboard() {
           if (s) switchToSession(s);
         }}
         onDeleteSession={(id) => deleteSession(id)}
-        onToggleDocsPanel={() => { setActivePanel(activePanel === "documents" ? null : "documents"); setActivePdf(null); }}
+        onToggleDocsPanel={() => { setActiveNav(activeNav === "documents" ? "chats" : "documents"); setActivePdf(null); }}
         onDeleteDoc={(id) => setConfirmDeleteId(id)}
         onUploadClick={() => fileInput.current?.click()}
         onSignOut={logoutAndReset}

@@ -1,22 +1,24 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import Markdown from "react-markdown";
+import MarkdownRenderer from "../components/MarkdownRenderer";
+import { useAuth } from "../context/AuthContext";
+import LeftNavRail from "../components/dashboard/LeftNavRail";
 import {
-  Sparkle, House, Download, FileText, ArrowLeft,
+  Sparkle, Download, FileText, ArrowLeft,
 } from "@phosphor-icons/react";
 import type { DocumentAnalysis } from "../types";
 
 function buildPrintHtml(title: string, content: string) {
   return `<!doctype html><html lang="en"><head><meta charset="UTF-8"><style>
 body{font-family:Inter,system-ui,sans-serif;max-width:900px;margin:40px auto;padding:0 24px;color:#1a1a1a;line-height:1.7}
-h1{font-size:2rem;border-bottom:2px solid #7C3AED;padding-bottom:8px}
-h2{font-size:1.3rem;margin-top:28px;color:#7C3AED}
+h1{font-size:2rem;border-bottom:2px solid #3B82F6;padding-bottom:8px}
+h2{font-size:1.3rem;margin-top:28px;color:#3B82F6}
 h3{font-size:1.1rem;margin-top:20px}
 p,li{font-size:0.95rem}
 code{background:#f0f0f0;padding:1px 5px;border-radius:4px;font-size:0.85rem}
 pre{background:#f5f5f5;padding:12px;border-radius:8px;overflow-x:auto}
-blockquote{border-left:3px solid #7C3AED;margin:12px 0;padding:4px 16px;color:#555}
+blockquote{border-left:3px solid #3B82F6;margin:12px 0;padding:4px 16px;color:#555}
 hr{border:none;border-top:1px solid #ddd;margin:24px 0}
 </style></head><body>
 <h1>${title}</h1>
@@ -27,9 +29,32 @@ ${content}
 export default function FullAnalysis() {
   const location = useLocation();
   const navigate = useNavigate();
-  const state = location.state as { content?: string; analysis?: DocumentAnalysis } | null;
-  const content = state?.content || "";
-  const analysis = state?.analysis || null;
+  const { user } = useAuth();
+  const uid = user?.id || "";
+  const [loadedFromStorage, setLoadedFromStorage] = useState(false);
+  const [content, setContent] = useState("");
+  const [analysis, setAnalysis] = useState<DocumentAnalysis | null>(null);
+
+  useEffect(() => {
+    const locState = location.state as { content?: string; analysis?: DocumentAnalysis } | null;
+    if (locState?.content) {
+      setContent(locState.content);
+      setAnalysis(locState.analysis || null);
+      setLoadedFromStorage(false);
+    } else if (uid) {
+      const saved = localStorage.getItem(`full_analysis_content_${uid}`);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (parsed.content) {
+            setContent(parsed.content);
+            setAnalysis(parsed.analysis || null);
+            setLoadedFromStorage(true);
+          }
+        } catch { /* ignore */ }
+      }
+    }
+  }, [location.state, uid]);
   const [exportOpen, setExportOpen] = useState(false);
 
   const docCount = analysis?.documents_analyzed?.length ?? 0;
@@ -65,36 +90,43 @@ export default function FullAnalysis() {
     });
   }, [content]);
 
+  const accountName = user?.username || user?.display_name || user?.email?.split("@")[0] || "User";
+
   return (
-    <div className="h-screen flex flex-col bg-[#050B16] text-[#F2F2F2] overflow-hidden">
-      <header className="shrink-0 z-20 border-b border-white/[0.06] bg-[#050B16]/85 backdrop-blur-xl sticky top-0">
-        <div className="flex items-center gap-2 px-4 sm:px-6 h-[70px]">
-          <Link to="/" className="flex items-center shrink-0">
-            <img src="/logo.png" alt="VecXAud" className="w-12 h-12 object-contain" />
-          </Link>
-          <span className="text-white/20 mx-1">/</span>
-          <div className="inline-flex items-center gap-1.5 text-sm font-medium text-white/80">
-            <Sparkle size={14} weight="bold" className="text-purple-400" />
-            Full Paper Analysis
-          </div>
-          <div className="flex-1" />
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => navigate(-1)}
-              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-xs text-white/60 hover:text-white hover:bg-white/[0.05] transition-all cursor-pointer"
-            >
-              <ArrowLeft size={13} /> Back
+    <div className="h-screen flex overflow-hidden bg-[#090909] text-[#F2F2F2]">
+      <LeftNavRail
+        activeNav="analytics"
+        onNavChange={(id) => {
+          if (id === "chats" || id === "documents") navigate("/chat");
+          if (id === "analytics") navigate("/analysis");
+        }}
+        onAddCollection={() => {}}
+        username={accountName}
+      />
+
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <header className="shrink-0 z-20 border-b border-white/[0.06] bg-[#090909]">
+          <div className="flex items-center gap-3 px-4 sm:px-6 h-[60px]">
+            <button onClick={() => navigate(-1)} className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-xl text-[11px] text-white/60 hover:text-white hover:bg-white/[0.05] transition-all cursor-pointer">
+              <ArrowLeft size={12} /> Back
             </button>
-            <Link to="/" className="inline-flex items-center gap-1.5 h-8 px-2 sm:px-3 rounded-lg text-xs text-white/60 hover:text-white hover:bg-white/[0.05] transition-all" title="Home">
-              <House size={13} /> <span className="hidden sm:inline">Home</span>
-            </Link>
+            <span className="text-white/20">/</span>
+            <span className="text-sm font-semibold text-white flex items-center gap-2">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-[#3B82F6]">
+                <line x1="18" y1="20" x2="18" y2="10" />
+                <line x1="12" y1="20" x2="12" y2="4" />
+                <line x1="6" y1="20" x2="6" y2="14" />
+              </svg>
+              Full Paper Analysis
+            </span>
+            <div className="flex-1" />
             <div className="relative">
               <button
                 onClick={() => setExportOpen((o) => !o)}
                 disabled={!content}
-                className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-xs text-white/60 hover:text-white hover:bg-white/[0.05] transition-all cursor-pointer disabled:opacity-40"
+                className="inline-flex items-center gap-1.5 h-7 px-3 rounded-xl text-[11px] text-white/60 hover:text-white hover:bg-white/[0.05] transition-all cursor-pointer disabled:opacity-40"
               >
-                <Download size={13} /> Export
+                <Download size={12} /> Export
               </button>
               {exportOpen && (
                 <>
@@ -115,8 +147,7 @@ export default function FullAnalysis() {
               )}
             </div>
           </div>
-        </div>
-      </header>
+        </header>
 
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-4xl mx-auto px-4 sm:px-8 py-6 sm:py-10">
@@ -129,7 +160,7 @@ export default function FullAnalysis() {
               <p className="text-sm text-white/40 mt-1 max-w-md">
                 Run a document analysis first, then generate a full paper analysis from the results page.
               </p>
-              <Link to="/analysis" className="mt-4 inline-flex items-center gap-1.5 h-9 px-4 rounded-xl text-xs font-semibold text-white bg-gradient-to-r from-purple-600 to-[#1E3A5F] hover:shadow-lg hover:shadow-purple-500/20 transition-all">
+              <Link to="/analysis" className="mt-4 inline-flex items-center gap-1.5 h-9 px-4 rounded-xl text-xs font-semibold text-white bg-gradient-to-r from-[#3B82F6] to-[#1D4ED8] hover:shadow-lg hover:shadow-[#3B82F6]/20 transition-all">
                 Go to Analysis
               </Link>
             </div>
@@ -154,17 +185,17 @@ export default function FullAnalysis() {
                   <div key={i} className="mb-8 pb-6 border-b border-white/[0.06] last:border-0">
                     {section.title && (
                       <h2 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
-                        <span className="w-1.5 h-5 rounded-full bg-purple-500 shrink-0" />
+                        <span className="w-1.5 h-5 rounded-full bg-[#3B82F6] shrink-0" />
                         {section.title}
                       </h2>
                     )}
-                    <div className="text-sm leading-relaxed text-white/80 whitespace-pre-wrap">
-                      <Markdown>{section.body}</Markdown>
+                    <div className="text-sm leading-relaxed text-white/80">
+                      <MarkdownRenderer>{section.body}</MarkdownRenderer>
                     </div>
                   </div>
                 )) : (
-                  <div className="text-sm leading-relaxed text-white/80 whitespace-pre-wrap">
-                    <Markdown>{content}</Markdown>
+                  <div className="text-sm leading-relaxed text-white/80">
+                      <MarkdownRenderer>{content}</MarkdownRenderer>
                   </div>
                 )}
               </div>
@@ -172,7 +203,7 @@ export default function FullAnalysis() {
               <div className="flex items-center gap-3 pt-4 pb-8">
                 <button
                   onClick={exportAsPdf}
-                  className="inline-flex items-center gap-2 h-10 px-5 rounded-xl text-xs font-semibold text-white bg-gradient-to-r from-purple-600 to-[#1E3A5F] hover:shadow-lg hover:shadow-purple-500/20 transition-all cursor-pointer"
+                  className="inline-flex items-center gap-2 h-10 px-5 rounded-xl text-xs font-semibold text-white bg-gradient-to-r from-[#3B82F6] to-[#1D4ED8] hover:shadow-lg hover:shadow-[#3B82F6]/20 transition-all cursor-pointer"
                 >
                   <Download size={14} /> Export as PDF
                 </button>
@@ -187,6 +218,7 @@ export default function FullAnalysis() {
           )}
         </div>
       </div>
+    </div>
     </div>
   );
 }

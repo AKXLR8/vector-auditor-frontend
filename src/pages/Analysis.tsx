@@ -3,25 +3,28 @@ import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
 import {
-  FileText, House, SignOut, Sparkle, ArrowsClockwise,
-  WarningCircle, Check, X, Spinner, CaretDown, MagnifyingGlass, ChatText,
+  FileText, SignOut, Sparkle, ArrowsClockwise,
+  WarningCircle, Check, X, Spinner, CaretDown, MagnifyingGlass,
   Robot, PaperPlaneRight, Quotes, CheckCircle, MinusCircle,
   Brain, BookOpen, Lightbulb, ArrowRight,
   CaretRight, Download,
 } from "@phosphor-icons/react";
 import { useAuth } from "../context/AuthContext";
+import LeftNavRail from "../components/dashboard/LeftNavRail";
 import { analyzeDocuments, sendNexAGI } from "../api/query";
 import { useDocumentSync } from "../hooks/useDocumentSync";
 import { useLocalStorage } from "../hooks/useLocalStorage";
 import { useDebounce } from "../hooks/useDebounce";
-import Markdown from "react-markdown";
+import MarkdownRenderer from "../components/MarkdownRenderer";
 import { Skeleton } from "../components/Skeleton";
 import { errorMessage } from "../lib/errors";
+import { getPrivacyDocIds } from "../lib/privacyStore";
 import type { Document, DocumentAnalysis, AnalysisConfidence } from "../types";
 
 const FOCUS_KEY = "analysis_focus_topic";
 const SELECTION_KEY_PREFIX = "analysis_doc_selection_";
 const RESULT_KEY_PREFIX = "analysis_result_";
+const FULL_ANALYSIS_KEY_PREFIX = "full_analysis_content_";
 
 function scopedKey(prefix: string, uid: string) {
   return `${prefix}${uid || "anon"}`;
@@ -162,6 +165,8 @@ export default function Analysis() {
           content: `You are a research paper analyst. Given the following structured analysis of a set of documents, produce a comprehensive, well-organized full paper analysis report. Include an executive summary, detailed findings across all sections, and a conclusion with recommendations.\n\n---\n\n${baseContent}`,
         },
       ]);
+      const fullKey = scopedKey(FULL_ANALYSIS_KEY_PREFIX, uid);
+      localStorage.setItem(fullKey, JSON.stringify({ content: answer, analysis: result, createdAt: Date.now() }));
       navigate("/analysis/full", { state: { content: answer, analysis: result } });
     } catch {
       toast.error("Failed to generate full analysis");
@@ -173,7 +178,31 @@ export default function Analysis() {
   const { refetch } = useDocumentSync({
     enabled: !!uid,
     onDocs: (fresh) => {
-      setDocs(fresh);
+      setDocs((prev) => {
+        const serverIds = new Set(fresh.map((d) => d.document_id ?? d.id));
+        const pending = prev.filter((d) => {
+          const id = d.document_id ?? d.id;
+          return d.status === "processing" && !serverIds.has(id);
+        });
+        const optPrivacy = new Map<string, boolean>();
+        for (const d of prev) {
+          const id = d.document_id ?? d.id;
+          if (id && d.privacy) optPrivacy.set(id, true);
+        }
+        for (const id of getPrivacyDocIds()) {
+          optPrivacy.set(id, true);
+        }
+        const merged = [
+          ...pending,
+          ...fresh.map((d) => {
+            const id = d.document_id ?? d.id;
+            return id && !d.privacy && optPrivacy.has(id)
+              ? { ...d, privacy: true }
+              : d;
+          }),
+        ];
+        return merged;
+      });
       setDocsLoading(false);
     },
     onError: () => {
@@ -306,8 +335,8 @@ export default function Analysis() {
     return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Analysis Report</title>
 <style>
   body{font-family:system-ui,sans-serif;max-width:800px;margin:40px auto;padding:0 20px;color:#111;line-height:1.6}
-  h1{font-size:1.8rem;border-bottom:2px solid #2563EB;padding-bottom:8px}
-  h2{font-size:1.3rem;margin-top:28px;color:#2563EB}
+  h1{font-size:1.8rem;border-bottom:2px solid #3B82F6;padding-bottom:8px}
+  h2{font-size:1.3rem;margin-top:28px;color:#3B82F6}
   ul{padding-left:20px}
   li{margin-bottom:4px}
   .meta{color:#666;font-size:0.9rem}
@@ -405,36 +434,39 @@ ${r.limitations ? `<h2>Limitations</h2><p>${r.limitations}</p>` : ""}
   }, [result]);
 
   return (
-    <div className="h-screen flex flex-col bg-[#050B16] text-[#F2F2F2] overflow-hidden">
-      {/* ─── Top Nav ─── */}
-      <header className="shrink-0 z-20 border-b border-white/[0.06] bg-[#050B16]/85 backdrop-blur-xl sticky top-0">
-        <div className="flex items-center gap-2 px-4 sm:px-6 h-[70px]">
-          <Link to="/chat" className="flex items-center shrink-0">
-            <img src="/logo.png" alt="VecXAud" className="w-12 h-12 object-contain" />
-          </Link>
-          <span className="text-white/20 mx-1">/</span>
-          <div className="inline-flex items-center gap-1.5 text-sm font-medium text-white/80">
-            <Sparkle size={14} weight="bold" className="text-[#2563EB]" />
-            Analysis
-          </div>
-          <div className="flex-1" />
-          <div className="flex items-center gap-1">
-            <Link to="/chat" className="inline-flex items-center gap-1.5 h-8 px-2 sm:px-3 rounded-lg text-xs text-white/60 hover:text-white hover:bg-white/[0.05] transition-all" title="Chat">
-              <ChatText size={13} /> <span className="hidden sm:inline">Chat</span>
-            </Link>
-            <Link to="/" className="inline-flex items-center gap-1.5 h-8 px-2 sm:px-3 rounded-lg text-xs text-white/60 hover:text-white hover:bg-white/[0.05] transition-all" title="Home">
-              <House size={13} /> <span className="hidden sm:inline">Home</span>
-            </Link>
-            <div className="hidden md:flex items-center gap-2 pl-2 ml-1 border-l border-white/[0.06]">
-              <span className="text-xs text-white/50 truncate max-w-[120px]">{accountName}</span>
+    <div className="h-screen flex overflow-hidden bg-[#090909] text-[#F2F2F2]">
+      <LeftNavRail
+        activeNav="analytics"
+        onNavChange={(id: string) => {
+          if (id === "chats" || id === "documents") navigate("/chat");
+        }}
+        onAddCollection={() => {}}
+        username={accountName}
+      />
+
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Slim header bar */}
+        <header className="shrink-0 z-20 border-b border-white/[0.06] bg-[#090909]">
+          <div className="flex items-center gap-3 px-4 sm:px-6 h-[60px]">
+            <span className="text-sm font-semibold text-white flex items-center gap-2">
+              {/* Analytics SVG icon matching LeftNavRail */}
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-[#3B82F6]">
+                <line x1="18" y1="20" x2="18" y2="10" />
+                <line x1="12" y1="20" x2="12" y2="4" />
+                <line x1="6" y1="20" x2="6" y2="14" />
+              </svg>
+              Analysis
+            </span>
+            <div className="flex-1" />
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-white/50 truncate max-w-[100px]">{accountName}</span>
               <button onClick={() => { authLogout(); navigate("/"); }}
-                className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg text-xs text-white/50 hover:text-red-400 hover:bg-red-500/5 transition-all cursor-pointer">
-                <SignOut size={13} /> Sign Out
+                className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-xl text-[11px] text-white/50 hover:text-red-400 hover:bg-red-500/5 transition-all cursor-pointer">
+                <SignOut size={12} /> Sign Out
               </button>
             </div>
           </div>
-        </div>
-      </header>
+        </header>
 
       {/* ─── Three-column layout ─── */}
       <div className="flex-1 flex flex-col lg:flex-row gap-3 sm:gap-6 p-3 sm:p-6 overflow-hidden">
@@ -449,7 +481,7 @@ ${r.limitations ? `<h2>Limitations</h2><p>${r.limitations}</p>` : ""}
             </div>
             {readyDocs.length > 0 && (
               <div className="px-4 pb-2 flex items-center gap-3 shrink-0">
-                <button onClick={toggleAll} className="text-[10.5px] text-[#2563EB] hover:text-[#60A5FA] transition-colors">
+                <button onClick={toggleAll} className="text-[10.5px] text-[#3B82F6] hover:text-[#60A5FA] transition-colors">
                   {allSelected ? "Deselect All" : "Select All"}
                 </button>
                 <span className="text-[10.5px] text-white/30">|</span>
@@ -483,18 +515,18 @@ ${r.limitations ? `<h2>Limitations</h2><p>${r.limitations}</p>` : ""}
                 <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
                   <FileText size={24} className="text-white/20 mb-2" />
                   <p className="text-xs text-white/40">No documents yet</p>
-                  <Link to="/chat" className="text-[11px] text-[#2563EB] hover:text-[#60A5FA] mt-1">Upload from chat</Link>
+                  <Link to="/chat" className="text-[11px] text-[#3B82F6] hover:text-[#60A5FA] mt-1">Upload from chat</Link>
                 </div>
               ) : (
                 filteredDocs.map((d) => {
                   const did = d.document_id ?? d.id;
                   const isChecked = selectedIds.includes(did);
                   return (
-                    <label key={did} className={`group flex items-center gap-2 px-2.5 py-2 rounded-xl cursor-pointer text-sm transition-all ${
-                      isChecked ? "bg-[#2563EB]/10 ring-1 ring-[#2563EB]/30" : "hover:bg-white/[0.04]"
+                    <label key={did} className={`group flex items-center gap-2 px-2.5 py-2 rounded-2xl cursor-pointer text-sm transition-all ${
+                      isChecked ? "bg-[#3B82F6]/10 ring-1 ring-[#3B82F6]/30" : "hover:bg-white/[0.04]"
                     }`}>
                       <span className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors ${
-                        isChecked ? "bg-[#2563EB] border-[#2563EB]" : "border-white/[0.15] group-hover:border-white/[0.3]"
+                        isChecked ? "bg-[#3B82F6] border-[#3B82F6]" : "border-white/[0.15] group-hover:border-white/[0.3]"
                       }`}>
                         {isChecked && <Check size={10} weight="bold" className="text-white" />}
                       </span>
@@ -523,14 +555,14 @@ ${r.limitations ? `<h2>Limitations</h2><p>${r.limitations}</p>` : ""}
                 value={focusTopic}
                 onChange={(e) => setFocusTopic(e.target.value)}
                 placeholder="Focus topic (optional) — e.g. methodology, limitations..."
-                className="flex-1 h-9 px-3 rounded-xl bg-white/[0.03] border border-white/[0.08] text-xs text-white placeholder:text-white/30 outline-none focus:border-[#2563EB]/40 transition-all"
+                className="flex-1 h-9 px-3 rounded-2xl bg-white/[0.03] border border-white/[0.08] text-xs text-white placeholder:text-white/30 outline-none focus:border-[#3B82F6]/40 transition-all"
                 onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); runAnalysis(); } }}
               />
               <button
                 type="button"
                 onClick={runAnalysis}
                 disabled={analyzing || readyDocs.length === 0}
-                className="inline-flex items-center gap-1.5 h-9 px-4 rounded-xl text-xs font-semibold text-white bg-gradient-to-r from-[#2563EB] to-[#1E3A5F] hover:shadow-lg hover:shadow-[#2563EB]/20 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer shrink-0"
+                className="inline-flex items-center gap-1.5 h-9 px-4 rounded-2xl text-xs font-semibold text-white bg-gradient-to-r from-[#3B82F6] to-[#1D4ED8] hover:shadow-lg hover:shadow-[#3B82F6]/20 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer shrink-0"
               >
                 <Sparkle size={13} weight="bold" />
                 {analyzing ? "Analyzing..." : "Analyze"}
@@ -544,7 +576,7 @@ ${r.limitations ? `<h2>Limitations</h2><p>${r.limitations}</p>` : ""}
               <motion.div key="analyzing" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.3 }}>
                 <GlassCard className="p-5 space-y-3">
                   <div className="flex items-center gap-2 text-sm text-white/70">
-                    <Spinner size={14} className="animate-spin text-[#2563EB]" />
+                    <Spinner size={14} className="animate-spin text-[#3B82F6]" />
                     Analyzing {selectedIds.length} document{selectedIds.length === 1 ? "" : "s"}...
                   </div>
                   <div className="space-y-2">
@@ -588,8 +620,8 @@ ${r.limitations ? `<h2>Limitations</h2><p>${r.limitations}</p>` : ""}
                   <GlassCard className="p-3 sm:p-4 mb-3 sm:mb-4 bg-gradient-to-br from-white/[0.04] to-transparent">
                     <div className="flex items-start justify-between gap-3 flex-wrap">
                       <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-[#2563EB]/10 flex items-center justify-center">
-                          <FileText size={16} className="text-[#2563EB]" />
+                        <div className="w-9 h-9 rounded-xl bg-[#3B82F6]/10 flex items-center justify-center">
+                          <FileText size={16} className="text-[#3B82F6]" />
                         </div>
                         <div>
                           <h2 className="text-sm font-semibold text-white">Document Analysis</h2>
@@ -610,7 +642,7 @@ ${r.limitations ? `<h2>Limitations</h2><p>${r.limitations}</p>` : ""}
                   {/* Summary */}
                   <GlassCard className="p-4 mb-3">
                     <h3 className="text-sm font-semibold text-white/90 flex items-center gap-2 mb-2">
-                      <Sparkle size={14} weight="bold" className="text-[#2563EB]" /> Summary
+                      <Sparkle size={14} weight="bold" className="text-[#3B82F6]" /> Summary
                     </h3>
                     <p className="text-sm leading-relaxed text-white/80 whitespace-pre-wrap">{result.summary}</p>
                   </GlassCard>
@@ -624,7 +656,7 @@ ${r.limitations ? `<h2>Limitations</h2><p>${r.limitations}</p>` : ""}
                       <ol className="space-y-2">
                         {result.key_findings.map((f, i) => (
                           <li key={i} className="flex items-start gap-2 text-sm text-white/80 p-2 rounded-lg hover:bg-white/[0.03] transition-colors">
-                            <span className="w-5 h-5 rounded-full bg-[#2563EB]/10 text-[#2563EB] text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
+                            <span className="w-5 h-5 rounded-full bg-[#3B82F6]/10 text-[#3B82F6] text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
                             <span>{f}</span>
                           </li>
                         ))}
@@ -746,10 +778,10 @@ ${r.limitations ? `<h2>Limitations</h2><p>${r.limitations}</p>` : ""}
                           <div key={i} className={`flex gap-2 ${msg.role === "user" ? "justify-end" : ""}`}>
                             <div className={`max-w-[85%] rounded-xl px-3 py-2 text-xs leading-relaxed ${
                               msg.role === "user"
-                                ? "bg-[#2563EB]/20 text-white/90 rounded-br-md"
+                                ? "bg-[#3B82F6]/20 text-white/90 rounded-br-md"
                                 : "bg-white/[0.04] text-white/80 rounded-bl-md"
                             }`}>
-                              <Markdown>{msg.content}</Markdown>
+                              <MarkdownRenderer className="text-xs leading-relaxed">{msg.content}</MarkdownRenderer>
                             </div>
                           </div>
                         ))
@@ -768,13 +800,13 @@ ${r.limitations ? `<h2>Limitations</h2><p>${r.limitations}</p>` : ""}
                         onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleChatSubmit(); } }}
                         placeholder="Ask a follow-up..."
                         disabled={chatLoading}
-                        className="flex-1 h-8 px-3 rounded-lg bg-white/[0.03] border border-white/[0.08] text-xs text-white placeholder:text-white/30 outline-none focus:border-[#2563EB]/40 disabled:opacity-40 transition-all"
+                        className="flex-1 h-8 px-3 rounded-2xl bg-white/[0.03] border border-white/[0.08] text-xs text-white placeholder:text-white/30 outline-none focus:border-[#3B82F6]/40 disabled:opacity-40 transition-all"
                       />
                       <button
                         type="button"
                         onClick={() => handleChatSubmit()}
                         disabled={!chatQuery.trim() || chatLoading}
-                        className="w-8 h-8 rounded-lg bg-[#2563EB] text-white flex items-center justify-center disabled:opacity-40 hover:bg-[#2563EB]/80 transition-all cursor-pointer"
+                        className="w-8 h-8 rounded-xl bg-[#3B82F6] text-white flex items-center justify-center disabled:opacity-40 hover:bg-[#3B82F6]/80 transition-all cursor-pointer"
                       >
                         <PaperPlaneRight size={12} weight="bold" />
                       </button>
@@ -829,7 +861,7 @@ ${r.limitations ? `<h2>Limitations</h2><p>${r.limitations}</p>` : ""}
               type="button"
               disabled={!result || fullAnalysisLoading}
               onClick={handleFullAnalysis}
-              className="w-full mt-4 inline-flex items-center justify-center gap-2 h-9 rounded-xl text-xs font-semibold text-white bg-gradient-to-r from-purple-600 to-[#1E3A5F] hover:shadow-lg hover:shadow-purple-500/20 disabled:opacity-40 transition-all cursor-pointer"
+              className="w-full mt-4 inline-flex items-center justify-center gap-2 h-9 rounded-xl text-xs font-semibold text-white bg-gradient-to-r from-purple-600 to-[#1D4ED8] hover:shadow-lg hover:shadow-purple-500/20 disabled:opacity-40 transition-all cursor-pointer"
             >
               {fullAnalysisLoading ? (
                 <><Spinner size={12} className="animate-spin" /> Generating...</>
@@ -837,6 +869,7 @@ ${r.limitations ? `<h2>Limitations</h2><p>${r.limitations}</p>` : ""}
                 <><Brain size={13} /> Full Paper Analysis <ArrowRight size={12} weight="bold" /></>
               )}
             </button>
+            <p className="text-[10px] text-white/40 text-center mt-2">It may take a while</p>
           </GlassCard>
 
           {/* Quick Actions */}
@@ -847,9 +880,9 @@ ${r.limitations ? `<h2>Limitations</h2><p>${r.limitations}</p>` : ""}
                 type="button"
                 disabled={!result || chatLoading}
                 onClick={() => { handleChatSubmit("Generate concise key takeaways from this analysis"); }}
-                className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-white/[0.04] hover:ring-1 hover:ring-white/[0.06] transition-all text-left cursor-pointer disabled:opacity-40"
+                className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-2xl hover:bg-white/[0.04] hover:ring-1 hover:ring-white/[0.06] transition-all text-left cursor-pointer disabled:opacity-40"
               >
-                <div className="w-7 h-7 rounded-lg bg-[#2563EB]/10 flex items-center justify-center shrink-0">
+                <div className="w-7 h-7 rounded-2xl bg-[#3B82F6]/10 flex items-center justify-center shrink-0">
                   <Lightbulb size={13} className="text-amber-300" />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -863,9 +896,9 @@ ${r.limitations ? `<h2>Limitations</h2><p>${r.limitations}</p>` : ""}
                   type="button"
                   disabled={!result}
                   onClick={() => setExportOpen((o) => !o)}
-                  className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-white/[0.04] hover:ring-1 hover:ring-white/[0.06] transition-all text-left cursor-pointer disabled:opacity-40"
+                  className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-2xl hover:bg-white/[0.04] hover:ring-1 hover:ring-white/[0.06] transition-all text-left cursor-pointer disabled:opacity-40"
                 >
-                  <div className="w-7 h-7 rounded-lg bg-[#2563EB]/10 flex items-center justify-center shrink-0">
+                  <div className="w-7 h-7 rounded-2xl bg-[#3B82F6]/10 flex items-center justify-center shrink-0">
                     <Download size={13} className="text-[#60A5FA]" />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -897,6 +930,7 @@ ${r.limitations ? `<h2>Limitations</h2><p>${r.limitations}</p>` : ""}
           </GlassCard>
         </aside>
       </div>
+    </div>
     </div>
   );
 }
