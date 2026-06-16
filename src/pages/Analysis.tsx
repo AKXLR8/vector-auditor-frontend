@@ -456,6 +456,22 @@ ${r.limitations ? `<h2>Limitations</h2><p>${r.limitations}</p>` : ""}
         {/* ─── MAIN CONTENT (50%) ─── */}
         <main className="flex-1 min-w-0 flex flex-col overflow-y-auto gap-5">
 
+          {/* Analyze button */}
+          <GlassCard className="p-4 flex items-center gap-3">
+            <div className="flex-1 min-w-0">
+              <h2 className="text-sm font-semibold text-white/90">Document Analysis</h2>
+              <p className="text-[11px] text-white/50">{readyDocs.length} document{readyDocs.length === 1 ? "" : "s"} selected</p>
+            </div>
+            <button
+              type="button"
+              onClick={runAnalysis}
+              disabled={analyzing || readyDocs.length === 0}
+              className="inline-flex items-center gap-1.5 h-9 px-4 rounded-xl text-xs font-semibold text-white bg-gradient-to-r from-[#2563EB] to-[#1E3A5F] hover:shadow-lg hover:shadow-[#2563EB]/20 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer shrink-0"
+            >
+              <Sparkle size={13} weight="bold" />
+              {analyzing ? "Analyzing..." : "Analyze"}
+            </button>
+          </GlassCard>
 
           {/* Analysis results or empty / loading / error states */}
           <AnimatePresence mode="wait">
