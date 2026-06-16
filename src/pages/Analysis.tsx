@@ -457,21 +457,26 @@ ${r.limitations ? `<h2>Limitations</h2><p>${r.limitations}</p>` : ""}
         {/* ─── MAIN CONTENT (50%) ─── */}
         <main className="flex-1 min-w-0 flex flex-col overflow-y-auto gap-5">
 
-          {/* Analyze button */}
-          <GlassCard className="p-4 flex items-center gap-3">
-            <div className="flex-1 min-w-0">
-              <h2 className="text-sm font-semibold text-white/90">Document Analysis</h2>
-              <p className="text-[11px] text-white/50">{readyDocs.length} document{readyDocs.length === 1 ? "" : "s"} selected</p>
+          {/* Focus topic + Analyze */}
+          <GlassCard className="p-4">
+            <div className="flex items-center gap-2">
+              <input
+                value={focusTopic}
+                onChange={(e) => setFocusTopic(e.target.value)}
+                placeholder="Focus topic (optional) — e.g. methodology, limitations..."
+                className="flex-1 h-9 px-3 rounded-xl bg-white/[0.03] border border-white/[0.08] text-xs text-white placeholder:text-white/30 outline-none focus:border-[#2563EB]/40 transition-all"
+                onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); runAnalysis(); } }}
+              />
+              <button
+                type="button"
+                onClick={runAnalysis}
+                disabled={analyzing || readyDocs.length === 0}
+                className="inline-flex items-center gap-1.5 h-9 px-4 rounded-xl text-xs font-semibold text-white bg-gradient-to-r from-[#2563EB] to-[#1E3A5F] hover:shadow-lg hover:shadow-[#2563EB]/20 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer shrink-0"
+              >
+                <Sparkle size={13} weight="bold" />
+                {analyzing ? "Analyzing..." : "Analyze"}
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={runAnalysis}
-              disabled={analyzing || readyDocs.length === 0}
-              className="inline-flex items-center gap-1.5 h-9 px-4 rounded-xl text-xs font-semibold text-white bg-gradient-to-r from-[#2563EB] to-[#1E3A5F] hover:shadow-lg hover:shadow-[#2563EB]/20 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer shrink-0"
-            >
-              <Sparkle size={13} weight="bold" />
-              {analyzing ? "Analyzing..." : "Analyze"}
-            </button>
           </GlassCard>
 
           {/* Analysis results or empty / loading / error states */}
@@ -518,23 +523,7 @@ ${r.limitations ? `<h2>Limitations</h2><p>${r.limitations}</p>` : ""}
                     </p>
                   </div>
 
-                  {/* Focus topic input */}
-                  <div className="flex items-center gap-2 mb-4">
-                    <input
-                      value={focusTopic}
-                      onChange={(e) => setFocusTopic(e.target.value)}
-                      placeholder='e.g. "methodology", "limitations", "findings about X"'
-                      className="flex-1 h-9 px-3 rounded-xl bg-white/[0.03] border border-white/[0.08] text-xs text-white placeholder:text-white/30 outline-none focus:border-[#2563EB]/40 transition-all"
-                    />
-                    <button
-                      type="button"
-                      onClick={runAnalysis}
-                      disabled={analyzing}
-                      className="inline-flex items-center gap-1.5 h-9 px-4 rounded-xl text-xs font-semibold text-white bg-gradient-to-r from-[#2563EB] to-[#1E3A5F] hover:shadow-lg hover:shadow-[#2563EB]/20 disabled:opacity-40 transition-all cursor-pointer"
-                    >
-                      {analyzing ? <><Spinner size={12} className="animate-spin" /> Analyzing</> : <><Sparkle size={12} /> Analyze</>}
-                    </button>
-                  </div>
+
 
                   {/* Analysis header card */}
                   <GlassCard className="p-3 sm:p-4 mb-3 sm:mb-4 bg-gradient-to-br from-white/[0.04] to-transparent">
