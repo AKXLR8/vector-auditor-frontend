@@ -205,6 +205,7 @@ export default function Analysis() {
       if (trimmedFocus) body.question = trimmedFocus;
       const data = await analyzeDocuments(body);
       setResult(data);
+      setFocusTopic("key findings and research gaps");
       toast.success("Analysis complete");
     } catch (err) {
       const msg = errorMessage(err, "Could not analyze documents");
@@ -296,9 +297,9 @@ ${r.limitations ? `<h2>Limitations</h2><p>${r.limitations}</p>` : ""}
     return () => document.removeEventListener("mousedown", handler);
   }, [exportOpen]);
 
-  const handleChatSubmit = async () => {
-    if (!chatQuery.trim() || chatLoading || !result) return;
-    const question = chatQuery.trim();
+  const handleChatSubmit = async (overrideMsg?: string) => {
+    const question = (overrideMsg ?? chatQuery).trim();
+    if (!question || chatLoading || !result) return;
     setChatQuery("");
     setChatMessages((p) => [...p, { role: "user", content: question }]);
     setChatLoading(true);
@@ -652,7 +653,7 @@ ${r.limitations ? `<h2>Limitations</h2><p>${r.limitations}</p>` : ""}
                       />
                       <button
                         type="button"
-                        onClick={handleChatSubmit}
+                        onClick={() => handleChatSubmit()}
                         disabled={!chatQuery.trim() || chatLoading}
                         className="w-8 h-8 rounded-lg bg-[#2563EB] text-white flex items-center justify-center disabled:opacity-40 hover:bg-[#2563EB]/80 transition-all cursor-pointer"
                       >
@@ -721,8 +722,8 @@ ${r.limitations ? `<h2>Limitations</h2><p>${r.limitations}</p>` : ""}
             <div className="space-y-1">
               <button
                 type="button"
-                disabled={!result}
-                onClick={() => { if (result) setChatQuery("Generate concise key takeaways from this analysis"); }}
+                disabled={!result || chatLoading}
+                onClick={() => { handleChatSubmit("Generate concise key takeaways from this analysis"); }}
                 className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-white/[0.04] hover:ring-1 hover:ring-white/[0.06] transition-all text-left cursor-pointer disabled:opacity-40"
               >
                 <div className="w-7 h-7 rounded-lg bg-[#2563EB]/10 flex items-center justify-center shrink-0">
