@@ -534,7 +534,20 @@ export default function Dashboard() {
           const id = d.document_id ?? d.id;
           return d.status === "processing" && !serverIds.has(id);
         });
-        const merged = [...pending, ...fresh];
+        const optPrivacy = new Map<string, boolean>();
+        for (const d of prev) {
+          const id = d.document_id ?? d.id;
+          if (id && d.privacy) optPrivacy.set(id, true);
+        }
+        const merged = [
+          ...pending,
+          ...fresh.map((d) => {
+            const id = d.document_id ?? d.id;
+            return id && !d.privacy && optPrivacy.has(id)
+              ? { ...d, privacy: true }
+              : d;
+          }),
+        ];
         if (uid) saveCachedDocs(uid, merged);
         return merged;
       });
