@@ -486,7 +486,7 @@ ${r.limitations ? `<h2>Limitations</h2><p>${r.limitations}</p>` : ""}
                 <GlassCard className="p-5 space-y-3">
                   <div className="flex items-center gap-2 text-sm text-white/70">
                     <Spinner size={14} className="animate-spin text-[#2563EB]" />
-                    Analyzing {readyDocs.length} document{readyDocs.length === 1 ? "" : "s"}...
+                    Analyzing {selectedIds.length === 0 || selectedIds.length >= readyDocs.length ? readyDocs.length : selectedIds.length} document{(selectedIds.length === 0 || selectedIds.length >= readyDocs.length ? readyDocs.length : selectedIds.length) === 1 ? "" : "s"}...
                   </div>
                   <div className="space-y-2">
                     <Skeleton className="h-3 w-11/12" /><Skeleton className="h-3 w-9/12" /><Skeleton className="h-3 w-7/12" /><Skeleton className="h-3 w-1/2" />
