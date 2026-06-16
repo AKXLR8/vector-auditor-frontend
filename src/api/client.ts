@@ -56,6 +56,15 @@ client.interceptors.response.use(
 
       const now = Date.now();
       if (now - lastRefreshAt < REFRESH_COOLDOWN_MS) {
+        if (isRefreshing) {
+          return new Promise((resolve, reject) => {
+            pendingQueue.push({ resolve, reject });
+          }).then((token) => {
+            originalRequest._retry = true;
+            originalRequest.headers.Authorization = `Bearer ${token}`;
+            return client(originalRequest);
+          });
+        }
         performHardLogout();
         return Promise.reject(err);
       }
