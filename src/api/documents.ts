@@ -19,11 +19,12 @@ export async function deleteDocument(id: string): Promise<void> {
   await client.delete(`/documents/${id}`);
 }
 
-export async function uploadDocuments(files: File[]): Promise<{
+export async function uploadDocuments(files: File[], privacy = false): Promise<{
   uploaded_documents: { upload_id: string; document_id: string; filename: string; status: string }[];
 }> {
   const form = new FormData();
   files.forEach((f) => form.append("files", f));
+  form.append("privacy", String(privacy));
   const { data } = await client.post("/documents", form, {
     headers: { "Content-Type": "multipart/form-data" },
   });

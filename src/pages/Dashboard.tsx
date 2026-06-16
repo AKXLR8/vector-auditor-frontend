@@ -306,6 +306,7 @@ export default function Dashboard() {
   const [activePdf, setActivePdf] = useState<{ docId: string; citation: Citation; page: number; cloudinaryUrl?: string } | null>(null);
   const [activePanel, setActivePanel] = useState<"documents" | null>(null);
   const [plusOpen, setPlusOpen] = useState(false);
+  const [uploadPrivacy, setUploadPrivacy] = useState(false);
 
   const [chatSearch, setChatSearch] = useState("");
   const debouncedChatSearch = useDebounce(chatSearch, 120);
@@ -1147,7 +1148,7 @@ export default function Dashboard() {
       _pending: { stage: "uploading", progress: 0 },
     }));
     try {
-      const res = await uploadDocuments(Array.from(files));
+      const res = await uploadDocuments(Array.from(files), uploadPrivacy);
       const progressMap: Record<string, { stage: string; progress: number }> = {};
       const optimistic: Document[] = [];
       const now = Date.now();
@@ -1507,12 +1508,24 @@ export default function Dashboard() {
               </button>
               {dedupedDocs.length > 0 && (
                 <div className="flex items-center gap-1.5">
-                  <button
+                   <button
                     onClick={() => fileInput.current?.click()}
                     title="Upload document"
                     className="w-6 h-6 rounded-md hover:bg-white/[0.06] flex items-center justify-center text-[#9DAFAC]/50 hover:text-[#9DAFAC]/80 transition-colors"
                   >
                     <FileText size={12} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setUploadPrivacy((v) => !v)}
+                    className={`inline-flex items-center gap-1 h-5 px-1.5 rounded text-[9px] font-medium transition-all ${
+                      uploadPrivacy
+                        ? "bg-green-500/15 text-green-300"
+                        : "bg-white/[0.04] text-white/40"
+                    }`}
+                    title={uploadPrivacy ? "PII masking enabled (NDA mode)" : "No PII masking (research mode)"}
+                  >
+                    {uploadPrivacy ? "NDA" : "Research"}
                   </button>
                   <button onClick={() => setSelectedDocs(new Set(dedupedDocs.map((d) => d.document_id ?? d.id)))}
                     className="text-[10px] text-[#3B82F6]/70 hover:text-[#3B82F6] transition-colors">All</button>
