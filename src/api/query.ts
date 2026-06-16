@@ -16,12 +16,14 @@ export class StreamAbortError extends Error {
 }
 
 export async function sendNexAGI(
-  messages: { role: "user" | "assistant"; content: string }[]
+  messages: { role: "user" | "assistant"; content: string }[],
+  maxTokens = 32768
 ): Promise<string> {
   const { data } = await client.post("/NexAGI", {
     messages,
     model: "nex-agi/nex-n2-pro:free",
     reasoning: true,
+    max_tokens: maxTokens,
   });
   return data.choices?.[0]?.message?.content ?? data.content ?? data.answer ?? "";
 }
