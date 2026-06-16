@@ -327,6 +327,8 @@ export default function Dashboard() {
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const messagesRef = useRef(messages);
   messagesRef.current = messages;
+  const activeSessionIdRef = useRef(activeSessionId);
+  activeSessionIdRef.current = activeSessionId;
   const activeModelRef = useRef(activeModel);
   activeModelRef.current = activeModel;
   const fileInput = useRef<HTMLInputElement>(null);
@@ -654,10 +656,12 @@ export default function Dashboard() {
     if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
     autoSaveTimerRef.current = setTimeout(() => {
       autoSaveTimerRef.current = null;
-      const title = deriveTitle(messages);
+      const msgs = messagesRef.current;
+      const sid = activeSessionIdRef.current;
+      const title = deriveTitle(msgs);
       setSessions((prev) => {
         const updated = prev.map((s) =>
-          s.id === activeSessionId ? { ...s, messages: [...messages], title } : s
+          s.id === sid ? { ...s, messages: [...msgs], title } : s
         );
         saveSessions(uid, updated);
         return updated;
@@ -678,18 +682,19 @@ export default function Dashboard() {
     if (!activeSessionId || !uid || loading) return;
     const session = sessionsRef.current.find((s) => s.id === activeSessionId);
     if (!session) return;
+    const sid = activeSessionId;
     const timer = setTimeout(() => {
-      const current = sessionsRef.current.find((s) => s.id === activeSessionId);
+      const current = sessionsRef.current.find((s) => s.id === sid);
       if (!current) return;
       const msgs = current.messages;
       const title = deriveTitle(msgs);
-      apiUpdateSession(activeSessionId, { title }).catch(() => {});
+      apiUpdateSession(sid, { title }).catch(() => {});
 
-      const synced = getSyncedSet(activeSessionId);
+      const synced = getSyncedSet(sid);
       for (const msg of msgs) {
         if (synced.has(msg.id)) continue;
         if (!msg.content) continue;
-        apiAddMessage(activeSessionId, {
+        apiAddMessage(sid, {
           role: msg.role,
           content: msg.content,
           citations: msg.citations,
@@ -700,7 +705,7 @@ export default function Dashboard() {
           verification: msg.verification,
         }).then(() => {
           synced.add(msg.id);
-          persistSyncedSet(activeSessionId, synced);
+          persistSyncedSet(sid, synced);
         }).catch(() => {});
       }
     }, 3000);
