@@ -634,6 +634,17 @@ input:focus-visible, textarea:focus-visible, select:focus-visible {
     display: none !important;
   }
 
+  /* Virtualize long lists for smoother scrolling */
+  .virtual-list > * {
+    content-visibility: auto;
+    contain-intrinsic-size: 48px;
+  }
+
+  /* Ensure main content uses GPU layer */
+  .main-content-area {
+    transform: translateZ(0);
+  }
+
   /* Ensure input area has enough bottom breathing room on mobile */
   .safe-area-bottom {
     padding-bottom: max(env(safe-area-inset-bottom), 55px) !important;

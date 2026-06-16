@@ -1453,16 +1453,27 @@ export default function Dashboard() {
       </AnimatePresence>
 
       {/* ── Unified Sidebar (Chats + Documents) ── */}
-      <motion.aside
-        animate={{ x: sidebarOpen ? 0 : "-100%" }}
-        transition={{ type: "spring", damping: 28, stiffness: 260 }}
-        className="fixed top-0 md:top-3 bottom-0 md:bottom-3 left-0 md:left-3 z-30 w-screen md:w-[300px] flex flex-col overflow-hidden liquid-glass-sidebar will-change-[transform] safe-area-top safe-area-bottom"
+      <aside
+        className={`fixed top-0 md:top-3 bottom-0 md:bottom-3 left-0 md:left-3 z-30 w-screen md:w-[300px] flex flex-col overflow-hidden liquid-glass-sidebar safe-area-top safe-area-bottom transition-transform duration-200 ease-out ${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
       >
-        {/* Logo + mobile close */}
+        {/* Logo + mobile close + Analysis */}
         <div className="flex items-center gap-2 px-4 pt-5 md:pt-4 pb-1 shrink-0">
           <img src="/logo.png" alt="Logo" className="w-16 h-16 md:w-14 md:h-14 object-contain" />
           <span className="text-sm font-semibold tracking-tight text-white/80">Vector Auditor</span>
-          <div className="flex-1" />
+          <button
+            type="button"
+            onClick={() => navigate("/analysis")}
+            className="ml-auto inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-medium bg-[#3B82F6]/10 text-[#60A5FA] border border-[#3B82F6]/20 hover:bg-[#3B82F6]/20 transition-colors"
+          >
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 2L2 7l10 5 10-5-10-5z" />
+              <path d="M2 17l10 5 10-5" />
+              <path d="M2 12l10 5 10-5" />
+            </svg>
+            Analysis
+          </button>
           <button
             type="button"
             onClick={() => setSidebarOpen(false)}
@@ -1546,7 +1557,7 @@ export default function Dashboard() {
                 <p className="px-1 py-1 text-[10px] uppercase tracking-wider text-[#9DAFAC]/40 font-medium flex items-center gap-1">
                   <PushPin size={9} weight="fill" /> Pinned
                 </p>
-                <div className="space-y-0.5">
+            <div className="space-y-0.5 virtual-list">
                   {pinnedSessions.map((session) => renderSessionRow(session))}
                 </div>
               </div>
@@ -1810,10 +1821,10 @@ export default function Dashboard() {
             Sign Out
           </button>
         </div>
-      </motion.aside>
+      </aside>
 
       {/* ── Main Content ── */}
-      <main className="flex-1 flex flex-col min-w-0 relative">
+      <main className="flex-1 flex flex-col min-w-0 relative main-content-area">
         {/* Static background gradient (no video — mobile perf) */}
         <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
           <div
@@ -1824,15 +1835,14 @@ export default function Dashboard() {
             }}
           />
         </div>
-        {/* Animated glow blobs */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
+        {/* Animated glow blobs — desktop only (kills mobile perf) */}
+        <div className="hidden md:block absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
           <div className="absolute -top-40 -right-40 w-[800px] h-[800px] rounded-full bg-[#3B82F6] opacity-[0.04]"
                style={{ filter: "blur(120px)" }} />
           <div className="absolute -bottom-40 -left-40 w-[700px] h-[700px] rounded-full bg-[#1E3A5F] opacity-[0.1]"
                style={{ filter: "blur(140px)" }} />
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[600px] rounded-full bg-[#3B82F6] opacity-[0.03]"
                style={{ filter: "blur(180px)" }} />
-          {/* Animated glow blob */}
           <motion.div
             animate={{ x: [0, 30, -20, 0], y: [0, -20, 30, 0] }}
             transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
