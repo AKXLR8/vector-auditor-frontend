@@ -125,10 +125,26 @@ function saveSessions(userId: string, sessions: LocalSession[]) {
   } catch { /* storage full */ }
 }
 
+function deletedSessionsKey(userId: string) {
+  return `deleted_sessions_${userId}`;
+}
+function loadDeletedSessions(userId: string): Set<string> {
+  try {
+    const raw = localStorage.getItem(deletedSessionsKey(userId));
+    if (raw) return new Set(JSON.parse(raw) as string[]);
+  } catch { /* ignore */ }
+  return new Set();
+}
+function saveDeletedSessions(userId: string, ids: Set<string>) {
+  try {
+    localStorage.setItem(deletedSessionsKey(userId), JSON.stringify(Array.from(ids)));
+  } catch { /* storage full */ }
+}
+
 function deriveTitle(messages: Message[]): string {
-  const nonWelcome = messages.filter((m) => m.role === "user");
-  if (nonWelcome.length === 0) return "New Chat";
-  const first = nonWelcome[0].content;
+  const userMessages = messages.filter((m) => m.role === "user");
+  if (userMessages.length === 0) return "New Chat";
+  const first = userMessages[0].content;
   return first.length > 40 ? first.slice(0, 40) + "..." : first;
 }
 
@@ -549,11 +565,13 @@ export default function Dashboard() {
     if (!uid) return;
     const myToken = ++userLoadTokenRef.current;
     const localSessions = loadSessions(uid);
+    const deletedIds = loadDeletedSessions(uid);
     apiListSessions().then((serverSessions) => {
       if (myToken !== userLoadTokenRef.current) return;
       const merged: LocalSession[] = [];
       const seenIds = new Set<string>();
       for (const ss of serverSessions) {
+        if (deletedIds.has(ss.id)) continue;
         seenIds.add(ss.id);
         const existing = localSessions.find((ls) => ls.id === ss.id);
         merged.push({
@@ -564,7 +582,7 @@ export default function Dashboard() {
         });
       }
       for (const ls of localSessions) {
-        if (!seenIds.has(ls.id)) {
+        if (!seenIds.has(ls.id) && !deletedIds.has(ls.id)) {
           merged.push(ls);
         }
       }
@@ -884,6 +902,9 @@ export default function Dashboard() {
 
   const deleteSession = (id: string, e?: React.MouseEvent) => {
     e?.stopPropagation?.();
+    const deletedIds = loadDeletedSessions(uid);
+    deletedIds.add(id);
+    saveDeletedSessions(uid, deletedIds);
     setSessions((prev) => {
       const updated = prev.filter((s) => s.id !== id);
       saveSessions(uid, updated);
@@ -896,7 +917,9 @@ export default function Dashboard() {
     }
     try { localStorage.removeItem(`synced_msgs_${id}`); } catch { /* ignore */ }
     syncedCache.delete(id);
-    apiDeleteSession(id).catch(() => {});
+    apiDeleteSession(id).catch(() => {
+      toast.error("Failed to delete chat on server — it may reappear on reload.");
+    });
     setPinnedIds((p) => p.filter((x) => x !== id));
     toast.success("Chat deleted");
   };
@@ -966,7 +989,7 @@ export default function Dashboard() {
 
     try {
       const historyMessages = messages
-        .filter((m) => !m.id.startsWith("welcome-") && (!opts.assistantIdToReplace || m.id !== opts.regenOfMessageId))
+        .filter((m) => m.id !== "welcome" && (!opts.assistantIdToReplace || m.id !== opts.regenOfMessageId))
         .map((m) => ({ role: m.role, content: m.content }));
 
       const req = {
@@ -1080,7 +1103,7 @@ export default function Dashboard() {
     if (loading) return;
     let lastUserIdx = -1;
     for (let i = messages.length - 1; i >= 0; i--) {
-      if (messages[i].role === "user" && !messages[i].id.startsWith("welcome-")) {
+      if (messages[i].role === "user" && messages[i].id !== "welcome") {
         lastUserIdx = i;
         break;
       }
@@ -1143,8 +1166,11 @@ export default function Dashboard() {
       setEditingSessionId(null);
       return;
     }
-    setSessions((p) => p.map((s) => s.id === id ? { ...s, title: trimmed } : s));
-    saveSessions(uid, sessions.map((s) => s.id === id ? { ...s, title: trimmed } : s));
+    setSessions((p) => {
+      const updated = p.map((s) => s.id === id ? { ...s, title: trimmed } : s);
+      saveSessions(uid, updated);
+      return updated;
+    });
     apiUpdateSession(id, { title: trimmed }).catch(() => {});
     setEditingSessionId(null);
   };
@@ -2017,7 +2043,7 @@ export default function Dashboard() {
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{ delay: 0.2 + i * 0.04, duration: 0.25 }}
                             whileHover={{ y: -1, borderColor: "rgba(0,230,207,0.3)" }}
-                            onClick={() => { setInput(prompt); setTimeout(() => handlePaperPlaneRight(), 50); }}
+                            onClick={() => { setInput(prompt); if (!loading) runQuery(prompt); }}
                             className="px-3.5 py-2 rounded-full text-[11px] sm:text-xs text-[#9DAFAC]/70 border border-white/[0.08] transition-[colors] duration-300 cursor-pointer active:scale-95"
                             style={{ background: "rgba(255,255,255,0.03)" }}
                           >
