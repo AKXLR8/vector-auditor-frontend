@@ -63,8 +63,6 @@ export default function Register() {
   useEffect(() => {
     if (isAuthenticated) navigate("/chat", { replace: true });
   }, [isAuthenticated, navigate]);
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -121,9 +119,7 @@ export default function Register() {
     if (password.length < 8) { setError("Password must be at least 8 characters"); return; }
     setLoading(true);
     try {
-      await register(email.trim(), password, firstName.trim(), lastName.trim(), username.trim());
-      const fullName = [firstName.trim(), lastName.trim()].filter(Boolean).join(" ");
-      if (fullName) localStorage.setItem(DISPLAY_NAME_KEY, fullName);
+      await register(email.trim(), password, username.trim());
       if (username.trim()) localStorage.setItem("user_username", username.trim());
       toast.success("Account created! Please sign in.");
       navigate("/login");
@@ -216,11 +212,6 @@ export default function Register() {
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <InputGroup label="First Name" placeholder="John" type="text" value={firstName} onChange={setFirstName} />
-              <InputGroup label="Last Name" placeholder="Doe" type="text" value={lastName} onChange={setLastName} />
-            </div>
-
             <InputGroup label="Username" placeholder="johndoe" type="text" value={username} onChange={setUsername} />
 
             <InputGroup label="Email" placeholder="john@example.com" type="email" value={email} onChange={setEmail} />

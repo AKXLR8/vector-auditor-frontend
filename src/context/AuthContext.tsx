@@ -10,7 +10,7 @@ interface AuthContextValue {
   token: string | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, firstName?: string, lastName?: string, username?: string) => Promise<void>;
+  register: (email: string, password: string, username?: string) => Promise<void>;
   logout: () => Promise<void>;
   oauthLogin: (provider: "github", credential: string) => Promise<void>;
   isAuthenticated: boolean;
@@ -151,8 +151,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setTokenAndSchedule(res.access_token, { username: res.username, display_name: res.display_name });
   };
 
-  const register = async (email: string, password: string, firstName?: string, lastName?: string, username?: string) => {
-    await authApi.register(email, password, firstName, lastName, username);
+  const register = async (email: string, password: string, username?: string) => {
+    await authApi.register(email, password, undefined, undefined, username);
   };
 
   const oauthLogin = async (provider: "github", credential: string) => {

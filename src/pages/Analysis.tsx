@@ -316,7 +316,7 @@ ${r.limitations ? `<h2>Limitations</h2><p>${r.limitations}</p>` : ""}
     } finally { setChatLoading(false); }
   };
 
-  const accountName = user?.display_name || user?.username || user?.email?.split("@")[0] || "User";
+  const accountName = user?.username || user?.display_name || user?.email?.split("@")[0] || "User";
   const conf = result ? CONFIDENCE_META[result.confidence] ?? CONFIDENCE_META.moderate : null;
 
   function countByCategory(items: string[], labels: string[]) {
