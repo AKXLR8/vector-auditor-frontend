@@ -122,6 +122,7 @@ export default function Analysis() {
   const [docs, setDocs] = useState<Document[]>([]);
   const [docsLoading, setDocsLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useLocalStorage<string[]>(scopedKey(SELECTION_KEY_PREFIX, uid), []);
+  const selectedInitialized = useRef(false);
   const [focusTopic, setFocusTopic] = useLocalStorage<string>(FOCUS_KEY, "");
   const [activeModel, setActiveModel] = useLocalStorage<string>("active_model", "mercury");
   const [result, setResult] = useLocalStorage<DocumentAnalysis | null>(scopedKey(RESULT_KEY_PREFIX, uid), null);
@@ -174,6 +175,23 @@ export default function Analysis() {
     return out;
   }, [docs]);
 
+  // Sync selectedIds with readyDocs: initialize to all on first load,
+  // and clean up stale IDs (from localStorage) on subsequent loads.
+  useEffect(() => {
+    if (readyDocs.length === 0) return;
+    const readyIds = readyDocs.map((d) => d.document_id ?? d.id).filter(Boolean) as string[];
+    const readySet = new Set(readyIds);
+    setSelectedIds((prev) => {
+      const filtered = prev.filter((id) => readySet.has(id));
+      if (filtered.length > 0) return filtered;
+      if (!selectedInitialized.current) {
+        selectedInitialized.current = true;
+        return readyIds;
+      }
+      return filtered;
+    });
+  }, [readyDocs, setSelectedIds]);
+
   const allSelected = readyDocs.length > 0 && selectedIds.length === readyDocs.length;
   const toggleAll = () => {
     if (allSelected) setSelectedIds([]);
@@ -197,7 +215,8 @@ export default function Analysis() {
     setResult(null);
     try {
       const allIds = readyDocs.map((d) => d.document_id ?? d.id).filter(Boolean) as string[];
-      const docIds = selectedIds.length === 0 || selectedIds.length >= readyDocs.length ? allIds : selectedIds.filter((id) => allIds.includes(id));
+      const docIds = selectedIds.filter((id) => allIds.includes(id));
+      if (docIds.length === 0) { toast.error("Select at least one document to analyze"); setAnalyzing(false); return; }
       const body: { question?: string; document_ids: string[]; max_citations?: number; model?: string } = {
         document_ids: docIds, max_citations: 20, model: activeModel,
       };
@@ -394,7 +413,7 @@ ${r.limitations ? `<h2>Limitations</h2><p>${r.limitations}</p>` : ""}
                 </button>
                 <span className="text-[10.5px] text-white/30">|</span>
                 <span className="text-[10.5px] text-white/40">
-                  {selectedIds.length === 0 || selectedIds.length === readyDocs.length
+                  {selectedIds.length === readyDocs.length
                     ? `All ${readyDocs.length}`
                     : `${selectedIds.length} selected`}
                 </span>
@@ -428,19 +447,18 @@ ${r.limitations ? `<h2>Limitations</h2><p>${r.limitations}</p>` : ""}
               ) : (
                 filteredDocs.map((d) => {
                   const did = d.document_id ?? d.id;
-                  const checked = selectedIds.length === 0 || selectedIds.includes(did);
-                  const explicitlyChecked = selectedIds.includes(did);
+                  const isChecked = selectedIds.includes(did);
                   return (
                     <label key={did} className={`group flex items-center gap-2 px-2.5 py-2 rounded-xl cursor-pointer text-sm transition-all ${
-                      explicitlyChecked ? "bg-[#2563EB]/10 ring-1 ring-[#2563EB]/30" : "hover:bg-white/[0.04]"
+                      isChecked ? "bg-[#2563EB]/10 ring-1 ring-[#2563EB]/30" : "hover:bg-white/[0.04]"
                     }`}>
                       <span className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors ${
-                        checked ? "bg-[#2563EB] border-[#2563EB]" : "border-white/[0.15] group-hover:border-white/[0.3]"
+                        isChecked ? "bg-[#2563EB] border-[#2563EB]" : "border-white/[0.15] group-hover:border-white/[0.3]"
                       }`}>
-                        {checked && <Check size={10} weight="bold" className="text-white" />}
+                        {isChecked && <Check size={10} weight="bold" className="text-white" />}
                       </span>
-                      <input type="checkbox" className="sr-only" checked={explicitlyChecked} onChange={() => toggleOne(did)} />
-                      <FileText size={13} className={`shrink-0 ${explicitlyChecked ? "text-[#60A5FA]" : "text-white/40"}`} />
+                      <input type="checkbox" className="sr-only" checked={isChecked} onChange={() => toggleOne(did)} />
+                      <FileText size={13} className={`shrink-0 ${isChecked ? "text-[#60A5FA]" : "text-white/40"}`} />
                       <span className="flex-1 min-w-0 truncate text-xs text-white/80" title={d.filename}>{d.filename || "Untitled"}</span>
                       <span className="text-[9px] text-white/25 font-mono shrink-0 bg-white/[0.04] px-1 py-0.5 rounded">{d.filename?.split(".").pop()?.toLowerCase() ?? ""}</span>
                     </label>
@@ -486,7 +504,7 @@ ${r.limitations ? `<h2>Limitations</h2><p>${r.limitations}</p>` : ""}
                 <GlassCard className="p-5 space-y-3">
                   <div className="flex items-center gap-2 text-sm text-white/70">
                     <Spinner size={14} className="animate-spin text-[#2563EB]" />
-                    Analyzing {selectedIds.length === 0 || selectedIds.length >= readyDocs.length ? readyDocs.length : selectedIds.length} document{(selectedIds.length === 0 || selectedIds.length >= readyDocs.length ? readyDocs.length : selectedIds.length) === 1 ? "" : "s"}...
+                    Analyzing {selectedIds.length} document{selectedIds.length === 1 ? "" : "s"}...
                   </div>
                   <div className="space-y-2">
                     <Skeleton className="h-3 w-11/12" /><Skeleton className="h-3 w-9/12" /><Skeleton className="h-3 w-7/12" /><Skeleton className="h-3 w-1/2" />
