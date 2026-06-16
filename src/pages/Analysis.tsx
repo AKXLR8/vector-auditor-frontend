@@ -592,6 +592,77 @@ ${r.limitations ? `<h2>Limitations</h2><p>${r.limitations}</p>` : ""}
                     </GlassCard>
                   )}
 
+                  {/* Methodology */}
+                  {result.methodology && (
+                    <GlassCard className="p-4 mb-3">
+                      <h3 className="text-sm font-semibold text-white/90 flex items-center gap-2 mb-2">
+                        <BookOpen size={14} weight="bold" className="text-emerald-300" /> Methodology
+                      </h3>
+                      <p className="text-sm leading-relaxed text-white/80 whitespace-pre-wrap">{result.methodology}</p>
+                    </GlassCard>
+                  )}
+
+                  {/* Contradictions */}
+                  {result.contradictions?.length > 0 && (
+                    <GlassCard className="p-4 mb-3">
+                      <h3 className="text-sm font-semibold text-white/90 flex items-center gap-2 mb-2">
+                        <WarningCircle size={14} weight="bold" className="text-red-300" /> Contradictions
+                      </h3>
+                      <ol className="space-y-1.5">
+                        {result.contradictions.map((c, i) => (
+                          <li key={i} className="flex items-start gap-2 text-sm text-white/80 p-2 rounded-lg hover:bg-white/[0.03] transition-colors">
+                            <span className="text-[10px] text-red-300 font-mono mt-0.5 shrink-0">[{i + 1}]</span>
+                            <span>{c}</span>
+                          </li>
+                        ))}
+                      </ol>
+                    </GlassCard>
+                  )}
+
+                  {/* Open Questions */}
+                  {result.open_questions?.length > 0 && (
+                    <GlassCard className="p-4 mb-3">
+                      <h3 className="text-sm font-semibold text-white/90 flex items-center gap-2 mb-2">
+                        <Brain size={14} weight="bold" className="text-purple-300" /> Open Questions
+                      </h3>
+                      <ol className="space-y-1.5">
+                        {result.open_questions.map((q, i) => (
+                          <li key={i} className="flex items-start gap-2 text-sm text-white/80 p-2 rounded-lg hover:bg-white/[0.03] transition-colors">
+                            <span className="text-[10px] text-purple-300 font-mono mt-0.5 shrink-0">[{i + 1}]</span>
+                            <span>{q}</span>
+                          </li>
+                        ))}
+                      </ol>
+                    </GlassCard>
+                  )}
+
+                  {/* Limitations */}
+                  {result.limitations && (
+                    <GlassCard className="p-4 mb-3">
+                      <h3 className="text-sm font-semibold text-white/90 flex items-center gap-2 mb-2">
+                        <WarningCircle size={14} weight="bold" className="text-orange-300" /> Limitations
+                      </h3>
+                      <p className="text-sm leading-relaxed text-white/80 whitespace-pre-wrap">{result.limitations}</p>
+                    </GlassCard>
+                  )}
+
+                  {/* Citations */}
+                  {result.citations?.length > 0 && (
+                    <GlassCard className="p-4 mb-3">
+                      <h3 className="text-sm font-semibold text-white/90 flex items-center gap-2 mb-2">
+                        <Quotes size={14} weight="bold" className="text-cyan-300" /> Citations
+                      </h3>
+                      <ol className="space-y-1.5">
+                        {result.citations.map((cit, i) => (
+                          <li key={i} className="flex items-start gap-2 text-sm text-white/80 p-2 rounded-lg hover:bg-white/[0.03] transition-colors">
+                            <span className="text-[10px] text-cyan-300 font-mono mt-0.5 shrink-0">[{i + 1}]</span>
+                            <span>{cit.quote} <span className="text-white/40">— {cit.source}{cit.page ? `, p.${cit.page}` : ""}</span></span>
+                          </li>
+                        ))}
+                      </ol>
+                    </GlassCard>
+                  )}
+
                   {/* Chat about analysis */}
                   <GlassCard className="p-4 mt-4 border-t border-white/[0.06]">
                     <div className="flex items-center justify-between mb-3">
