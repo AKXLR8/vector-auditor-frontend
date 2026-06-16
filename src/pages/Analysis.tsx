@@ -323,7 +323,18 @@ ${r.limitations ? `<h2>Limitations</h2><p>${r.limitations}</p>` : ""}
     setChatMessages((p) => [...p, { role: "user", content: question }]);
     setChatLoading(true);
     try {
-      const analysisContext = `Analysis summary: ${result.summary}\n\nKey findings: ${result.key_findings.join("\n")}\n\nResearch gaps: ${result.research_gaps.join("\n")}\n\nMethodology: ${result.methodology}\n\nLimitations: ${result.limitations}`;
+      const analysisContext = [
+        `Analysis summary: ${result.summary}`,
+        result.key_findings?.length ? `Key findings:\n${result.key_findings.join("\n")}` : "",
+        result.research_gaps?.length ? `Research gaps:\n${result.research_gaps.join("\n")}` : "",
+        result.methodology ? `Methodology: ${result.methodology}` : "",
+        result.contradictions?.length ? `Contradictions found:\n${result.contradictions.join("\n")}` : "",
+        result.open_questions?.length ? `Open questions:\n${result.open_questions.join("\n")}` : "",
+        result.limitations ? `Limitations: ${result.limitations}` : "",
+        result.citations?.length ? `Citations:\n${result.citations.map((c) => c.source || c.quote).join("\n")}` : "",
+        result.confidence ? `Confidence level: ${result.confidence}` : "",
+        result.documents_analyzed?.length ? `Documents analyzed: ${result.documents_analyzed.join(", ")}` : "",
+      ].filter(Boolean).join("\n\n");
       const answer = await sendNexAGI([
         { role: "user", content: `You are analyzing the following document analysis report:\n\n${analysisContext}` },
         ...chatMessages.map((m) => ({ role: m.role, content: m.content })),
