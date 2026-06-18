@@ -1962,7 +1962,7 @@ export default function Dashboard() {
 
           {/* ── PDF viewer overlay ── */}
             {activePdf && (
-              <div className="w-full md:w-1/2 border-l border-white/[0.06] bg-[#090909] flex flex-col overflow-hidden shrink-0 min-w-0 relative z-20">
+              <div className="w-full md:w-[65%] border-l border-white/[0.06] bg-[#090909] flex flex-col overflow-hidden shrink-0 min-w-0 relative z-20">
                 <DocumentViewer
                   docId={activePdf.docId}
                   citation={activePdf.citation}
