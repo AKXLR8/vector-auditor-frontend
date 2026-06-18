@@ -1508,9 +1508,9 @@ export default function Dashboard() {
         <>
           {/* Chat List Panel — desktop always visible, mobile slide-over */}
           <div
-            className={`fixed md:relative top-0 left-0 bottom-0 z-30 transition-transform duration-200 ease-out md:translate-x-0 ${
+            className={`fixed md:relative top-0 left-0 bottom-0 z-30 transition-all duration-200 ease-out md:translate-x-0 ${
               sidebarOpen ? "translate-x-0" : "-translate-x-full"
-            }`}
+            } ${activePdf ? "md:invisible md:opacity-0 md:pointer-events-none" : ""}`}
           >
             <ChatListPanel
               sessions={sessions}
@@ -1962,7 +1962,7 @@ export default function Dashboard() {
 
           {/* ── PDF viewer overlay ── */}
             {activePdf && (
-              <div className="w-full md:w-1/2 border-l border-white/[0.06] bg-[#090909] flex flex-col overflow-hidden shrink-0 min-w-0 relative z-20">
+              <div className="w-full md:w-[60%] border-l border-white/[0.06] bg-[#090909] flex flex-col overflow-hidden shrink-0 min-w-0 relative z-20">
                 <DocumentViewer
                   docId={activePdf.docId}
                   citation={activePdf.citation}
