@@ -471,9 +471,9 @@ ${r.limitations ? `<h2>Limitations</h2><p>${r.limitations}</p>` : ""}
         </header>
 
       {/* ─── Three-column layout ─── */}
-      <div className="flex-1 flex flex-col lg:flex-row gap-4 sm:gap-6 p-4 sm:p-6 overflow-hidden">
+      <div className="flex-1 flex flex-col lg:flex-row gap-4 sm:gap-6 p-4 sm:p-6 overflow-y-auto lg:overflow-hidden">
         {/* ─── LEFT SIDEBAR ─── */}
-        <aside className="flex w-full lg:w-[20%] min-w-0 lg:min-w-[220px] shrink-0 flex-col max-h-[160px] lg:max-h-none">
+        <aside className="flex w-full lg:w-[20%] min-w-0 lg:min-w-[220px] shrink-0 flex-col max-h-[220px] lg:max-h-none">
           <GlassCard className="flex flex-col h-full overflow-hidden">
             <div className="px-4 pt-4 pb-2 shrink-0">
               <h2 className="text-sm font-semibold text-white">Documents</h2>
@@ -548,7 +548,7 @@ ${r.limitations ? `<h2>Limitations</h2><p>${r.limitations}</p>` : ""}
         </aside>
 
         {/* ─── MAIN CONTENT (50%) ─── */}
-        <main className="flex-1 min-w-0 flex flex-col overflow-y-auto gap-5">
+        <main className="flex-1 min-w-0 flex flex-col lg:overflow-y-auto gap-5">
 
           {/* Focus topic + Analyze */}
           <GlassCard className="p-4">
@@ -835,7 +835,7 @@ ${r.limitations ? `<h2>Limitations</h2><p>${r.limitations}</p>` : ""}
         </main>
 
         {/* ─── RIGHT PANEL ─── */}
-        <aside className="flex w-full lg:w-[30%] min-w-0 lg:min-w-[260px] lg:max-w-[340px] shrink-0 flex-col gap-4 overflow-y-auto">
+        <aside className="flex w-full lg:w-[30%] min-w-0 lg:min-w-[260px] lg:max-w-[340px] shrink-0 flex-col gap-4 overflow-y-auto max-md:pb-6">
           {/* Paper Analysis Card */}
           <GlassCard className="p-4">
             <div className="w-1 h-10 w-full rounded-full bg-gradient-to-r from-purple-500 to-transparent mb-3" />

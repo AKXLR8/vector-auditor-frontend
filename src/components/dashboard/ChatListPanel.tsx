@@ -80,7 +80,7 @@ export default function ChatListPanel({
       </div>
 
       {/* Session list */}
-      <div className="flex-1 min-h-0 overflow-y-auto px-2 pb-2 space-y-0.5 scrollbar-thin">
+      <div className="flex-1 min-h-0 overflow-y-auto px-2 pb-2 space-y-0.5 scrollbar-thin max-md:pb-[60px]">
         {!chatSearch && sessions.length === 0 && (
           <OnboardingEmpty variant="no-chats" onAction={onNewChat} />
         )}

@@ -1999,30 +1999,44 @@ export default function Dashboard() {
       </>)}
 
       {/* Mobile bottom nav — replaces LeftNavRail on small screens */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 h-14 bg-[#090909]/95 backdrop-blur-lg border-t border-white/[0.06] flex items-center justify-around px-2 safe-area-bottom">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 h-16 bg-[#090909] border-t border-white/[0.06] flex items-center justify-around px-1 safe-area-bottom shadow-[0_-4px_20px_rgba(0,0,0,0.3)]">
         <button
           onClick={() => { setActiveNav("documents"); setActivePdf(null); }}
           type="button"
-          className={`flex flex-col items-center justify-center gap-0.5 w-16 h-10 rounded-xl transition-colors cursor-pointer ${activeNav === "documents" ? "text-[#3B82F6]" : "text-white/40"}`}
+          className={`flex flex-col items-center justify-center gap-1 flex-1 h-full rounded-xl transition-all cursor-pointer active:scale-95 ${
+            activeNav === "documents" ? "text-[#3B82F6]" : "text-white/40 hover:text-white/70"
+          }`}
         >
-          <FileText size={20} weight={activeNav === "documents" ? "fill" : "regular"} />
-          <span className="text-[9px] font-medium leading-none">Docs</span>
+          <div className={`flex items-center justify-center w-full h-10 rounded-xl ${
+            activeNav === "documents" ? "bg-[#3B82F6]/10" : ""
+          }`}>
+            <FileText size={22} weight={activeNav === "documents" ? "fill" : "regular"} />
+          </div>
+          <span className="text-[10px] font-medium leading-none mt-0.5">Docs</span>
         </button>
         <button
           onClick={() => setActiveNav("chats")}
           type="button"
-          className={`flex flex-col items-center justify-center gap-0.5 w-16 h-10 rounded-xl transition-colors cursor-pointer ${activeNav === "chats" ? "text-[#3B82F6]" : "text-white/40"}`}
+          className={`flex flex-col items-center justify-center gap-1 flex-1 h-full rounded-xl transition-all cursor-pointer active:scale-95 ${
+            activeNav === "chats" ? "text-[#3B82F6]" : "text-white/40 hover:text-white/70"
+          }`}
         >
-          <ChatCircle size={20} weight={activeNav === "chats" ? "fill" : "regular"} />
-          <span className="text-[9px] font-medium leading-none">Chats</span>
+          <div className={`flex items-center justify-center w-full h-10 rounded-xl ${
+            activeNav === "chats" ? "bg-[#3B82F6]/10" : ""
+          }`}>
+            <ChatCircle size={22} weight={activeNav === "chats" ? "fill" : "regular"} />
+          </div>
+          <span className="text-[10px] font-medium leading-none mt-0.5">Chats</span>
         </button>
         <button
           onClick={() => { window.location.href = "/analysis"; }}
           type="button"
-          className="flex flex-col items-center justify-center gap-0.5 w-16 h-10 rounded-xl transition-colors text-white/40 cursor-pointer active:scale-95"
+          className="flex flex-col items-center justify-center gap-1 flex-1 h-full rounded-xl transition-all cursor-pointer text-white/40 hover:text-white/70 active:scale-95"
         >
-          <ChartBar size={20} />
-          <span className="text-[9px] font-medium leading-none">Analyze</span>
+          <div className="flex items-center justify-center w-full h-10 rounded-xl">
+            <ChartBar size={22} />
+          </div>
+          <span className="text-[10px] font-medium leading-none mt-0.5">Analyze</span>
         </button>
       </nav>
 
