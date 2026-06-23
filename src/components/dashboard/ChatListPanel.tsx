@@ -42,7 +42,7 @@ export default function ChatListPanel({
   renderSessionRow,
 }: Props) {
   return (
-    <aside className="w-[340px] flex flex-col bg-[#090909] border-r border-[rgba(255,255,255,0.06)] shrink-0">
+    <aside className="w-full md:w-[340px] flex flex-col bg-[#090909] border-r border-[rgba(255,255,255,0.06)] shrink-0">
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-4 shrink-0">
         <h1 className="text-base font-semibold text-white">Chats</h1>

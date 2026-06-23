@@ -1510,7 +1510,7 @@ export default function Dashboard() {
         <>
           {/* Chat List Panel — desktop always visible, mobile slide-over */}
           <div
-            className={`fixed md:relative top-0 left-0 bottom-0 z-30 transition-transform duration-200 ease-out md:translate-x-0 ${
+            className={`fixed md:relative top-0 left-0 bottom-0 z-30 w-full max-w-[340px] md:max-w-none transition-transform duration-200 ease-out md:translate-x-0 ${
               sidebarOpen ? "translate-x-0" : "-translate-x-full"
             }`}
           >
@@ -2002,21 +2002,24 @@ export default function Dashboard() {
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 h-14 bg-[#090909]/95 backdrop-blur-lg border-t border-white/[0.06] flex items-center justify-around px-2 safe-area-bottom">
         <button
           onClick={() => { setActiveNav("documents"); setActivePdf(null); }}
-          className={`flex flex-col items-center justify-center gap-0.5 w-16 h-10 rounded-xl transition-colors ${activeNav === "documents" ? "text-[#3B82F6]" : "text-white/40"}`}
+          type="button"
+          className={`flex flex-col items-center justify-center gap-0.5 w-16 h-10 rounded-xl transition-colors cursor-pointer ${activeNav === "documents" ? "text-[#3B82F6]" : "text-white/40"}`}
         >
           <FileText size={20} weight={activeNav === "documents" ? "fill" : "regular"} />
           <span className="text-[9px] font-medium leading-none">Docs</span>
         </button>
         <button
           onClick={() => setActiveNav("chats")}
-          className={`flex flex-col items-center justify-center gap-0.5 w-16 h-10 rounded-xl transition-colors ${activeNav === "chats" ? "text-[#3B82F6]" : "text-white/40"}`}
+          type="button"
+          className={`flex flex-col items-center justify-center gap-0.5 w-16 h-10 rounded-xl transition-colors cursor-pointer ${activeNav === "chats" ? "text-[#3B82F6]" : "text-white/40"}`}
         >
           <ChatCircle size={20} weight={activeNav === "chats" ? "fill" : "regular"} />
           <span className="text-[9px] font-medium leading-none">Chats</span>
         </button>
         <button
-          onClick={() => navigate("/analysis")}
-          className="flex flex-col items-center justify-center gap-0.5 w-16 h-10 rounded-xl transition-colors text-white/40"
+          onClick={() => { window.location.href = "/analysis"; }}
+          type="button"
+          className="flex flex-col items-center justify-center gap-0.5 w-16 h-10 rounded-xl transition-colors text-white/40 cursor-pointer active:scale-95"
         >
           <ChartBar size={20} />
           <span className="text-[9px] font-medium leading-none">Analyze</span>
