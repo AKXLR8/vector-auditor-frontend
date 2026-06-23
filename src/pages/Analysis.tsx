@@ -557,14 +557,14 @@ ${r.limitations ? `<h2>Limitations</h2><p>${r.limitations}</p>` : ""}
                 value={focusTopic}
                 onChange={(e) => setFocusTopic(e.target.value)}
                 placeholder="Focus topic (optional) — e.g. methodology, limitations..."
-                className="flex-1 h-10 md:h-9 px-3 rounded-2xl bg-white/[0.03] border border-white/[0.08] text-xs text-white placeholder:text-white/30 outline-none focus:border-[#3B82F6]/40 transition-all"
+                className="flex-1 min-w-0 h-10 md:h-9 px-2.5 md:px-3 rounded-2xl bg-white/[0.03] border border-white/[0.08] text-xs text-white placeholder:text-white/30 outline-none focus:border-[#3B82F6]/40 transition-all"
                 onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); runAnalysis(); } }}
               />
               <button
                 type="button"
                 onClick={runAnalysis}
                 disabled={analyzing || readyDocs.length === 0}
-                className="inline-flex items-center gap-1.5 h-10 md:h-9 px-5 md:px-4 rounded-2xl text-xs font-semibold text-white bg-gradient-to-r from-[#3B82F6] to-[#1D4ED8] hover:shadow-lg hover:shadow-[#3B82F6]/20 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer shrink-0"
+                className="inline-flex items-center gap-1.5 h-10 md:h-9 px-3.5 md:px-4 rounded-2xl text-xs font-semibold text-white bg-gradient-to-r from-[#3B82F6] to-[#1D4ED8] hover:shadow-lg hover:shadow-[#3B82F6]/20 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer shrink-0 whitespace-nowrap"
               >
                 <Sparkle size={13} weight="bold" />
                 {analyzing ? "Analyzing..." : "Analyze"}

@@ -1510,7 +1510,7 @@ export default function Dashboard() {
         <>
           {/* Chat List Panel — desktop always visible, mobile slide-over */}
           <div
-            className={`fixed md:relative top-0 left-0 bottom-0 z-30 w-full max-w-[340px] md:max-w-none transition-transform duration-200 ease-out md:translate-x-0 ${
+            className={`fixed md:relative top-0 left-0 bottom-0 z-30 w-screen md:w-[340px] overflow-y-auto transition-transform duration-200 ease-out md:translate-x-0 ${
               sidebarOpen ? "translate-x-0" : "-translate-x-full"
             }`}
           >
