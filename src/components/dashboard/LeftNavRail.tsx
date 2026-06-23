@@ -46,11 +46,11 @@ const NAV_ITEMS: NavItem[] = [
 interface Props {
   activeNav: string;
   onNavChange: (id: string) => void;
-  onAddCollection: () => void;
+  onHome: () => void;
   username: string;
 }
 
-export default function LeftNavRail({ activeNav, onNavChange, onAddCollection, username }: Props) {
+export default function LeftNavRail({ activeNav, onNavChange, onHome, username }: Props) {
   return (
     <nav className="w-[72px] flex flex-col items-center py-4 bg-[#090909] border-r border-[rgba(255,255,255,0.06)] shrink-0 relative">
       {/* Logo — glowing beacon */}
@@ -121,19 +121,19 @@ export default function LeftNavRail({ activeNav, onNavChange, onAddCollection, u
           </div>
         </div>
 
-        {/* Add Collection */}
+        {/* Home */}
         <motion.button
-          whileHover={{ scale: 1.05, rotate: 90 }}
+          whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          onClick={onAddCollection}
-          className="relative group w-11 h-11 rounded-2xl bg-[#151515] border border-dashed border-[rgba(255,255,255,0.08)] flex items-center justify-center text-[#4B5563] hover:text-[#3B82F6] hover:border-[#3B82F6]/20 transition-all duration-300"
+          onClick={onHome}
+          className="relative group w-11 h-11 rounded-2xl bg-[#151515] border border-[rgba(255,255,255,0.06)] flex items-center justify-center text-[#4B5563] hover:text-[#3B82F6] hover:border-[#3B82F6]/20 transition-all duration-300"
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            <line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="5" y1="12" x2="19" y2="12" />
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+            <polyline points="9 22 9 12 15 12 15 22" />
           </svg>
           <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 px-3 py-1.5 rounded-xl bg-[#151515] border border-[rgba(255,255,255,0.06)] text-xs text-white whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none z-50 shadow-xl">
-            New collection
+            Home
             <div className="absolute right-full top-1/2 -translate-y-1/2 w-2 h-2 bg-[#151515] border-l border-t border-[rgba(255,255,255,0.06)] -rotate-45" />
           </div>
         </motion.button>

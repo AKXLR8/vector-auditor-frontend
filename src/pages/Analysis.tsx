@@ -435,14 +435,16 @@ ${r.limitations ? `<h2>Limitations</h2><p>${r.limitations}</p>` : ""}
 
   return (
     <div className="h-screen flex overflow-hidden bg-[#090909] text-[#F2F2F2]">
-      <LeftNavRail
-        activeNav="analytics"
-        onNavChange={(id: string) => {
-          if (id === "chats" || id === "documents") navigate("/chat");
-        }}
-        onAddCollection={() => {}}
-        username={accountName}
-      />
+      <div className="hidden md:block">
+        <LeftNavRail
+          activeNav="analytics"
+          onNavChange={(id: string) => {
+            if (id === "chats" || id === "documents") navigate("/chat");
+          }}
+          onHome={() => navigate("/")}
+          username={accountName}
+        />
+      </div>
 
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Slim header bar */}
@@ -461,7 +463,7 @@ ${r.limitations ? `<h2>Limitations</h2><p>${r.limitations}</p>` : ""}
             <div className="flex items-center gap-2">
               <span className="text-xs text-white/50 truncate max-w-[100px]">{accountName}</span>
               <button onClick={() => { authLogout(); navigate("/"); }}
-                className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-xl text-[11px] text-white/50 hover:text-red-400 hover:bg-red-500/5 transition-all cursor-pointer">
+                className="inline-flex items-center gap-1.5 min-h-[44px] h-auto py-2.5 px-4 md:h-7 md:px-2.5 md:py-0 rounded-xl text-[11px] text-white/50 hover:text-red-400 hover:bg-red-500/5 transition-all cursor-pointer">
                 <SignOut size={12} /> Sign Out
               </button>
             </div>
@@ -469,7 +471,7 @@ ${r.limitations ? `<h2>Limitations</h2><p>${r.limitations}</p>` : ""}
         </header>
 
       {/* ─── Three-column layout ─── */}
-      <div className="flex-1 flex flex-col lg:flex-row gap-3 sm:gap-6 p-3 sm:p-6 overflow-hidden">
+      <div className="flex-1 flex flex-col lg:flex-row gap-4 sm:gap-6 p-4 sm:p-6 overflow-hidden">
         {/* ─── LEFT SIDEBAR ─── */}
         <aside className="flex w-full lg:w-[20%] min-w-0 lg:min-w-[220px] shrink-0 flex-col max-h-[160px] lg:max-h-none">
           <GlassCard className="flex flex-col h-full overflow-hidden">
@@ -494,7 +496,7 @@ ${r.limitations ? `<h2>Limitations</h2><p>${r.limitations}</p>` : ""}
             )}
             {readyDocs.length >= 5 && (
               <div className="px-4 pb-2 shrink-0">
-                <div className="flex items-center gap-2 px-2.5 h-7 rounded-lg bg-white/[0.03] border border-white/[0.06]">
+                <div className="flex items-center gap-2 px-2.5 h-10 md:h-7 rounded-lg bg-white/[0.03] border border-white/[0.06]">
                   <MagnifyingGlass size={11} className="text-white/30 shrink-0" />
                   <input value={docSearch} onChange={(e) => setDocSearch(e.target.value)} placeholder="Filter docs..." className="flex-1 min-w-0 bg-transparent text-[11px] text-white placeholder:text-white/30 outline-none" />
                   {docSearch && <button onClick={() => setDocSearch("")} className="text-white/30 hover:text-white/60"><X size={10} weight="fill" /></button>}
@@ -522,7 +524,7 @@ ${r.limitations ? `<h2>Limitations</h2><p>${r.limitations}</p>` : ""}
                   const did = d.document_id ?? d.id;
                   const isChecked = selectedIds.includes(did);
                   return (
-                    <label key={did} className={`group flex items-center gap-2 px-2.5 py-2 rounded-2xl cursor-pointer text-sm transition-all ${
+                    <label key={did} className={`group flex items-center gap-2 px-2.5 min-h-[44px] py-2.5 md:py-2 rounded-2xl cursor-pointer text-sm transition-all ${
                       isChecked ? "bg-[#3B82F6]/10 ring-1 ring-[#3B82F6]/30" : "hover:bg-white/[0.04]"
                     }`}>
                       <span className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors ${
@@ -555,14 +557,14 @@ ${r.limitations ? `<h2>Limitations</h2><p>${r.limitations}</p>` : ""}
                 value={focusTopic}
                 onChange={(e) => setFocusTopic(e.target.value)}
                 placeholder="Focus topic (optional) — e.g. methodology, limitations..."
-                className="flex-1 h-9 px-3 rounded-2xl bg-white/[0.03] border border-white/[0.08] text-xs text-white placeholder:text-white/30 outline-none focus:border-[#3B82F6]/40 transition-all"
+                className="flex-1 h-10 md:h-9 px-3 rounded-2xl bg-white/[0.03] border border-white/[0.08] text-xs text-white placeholder:text-white/30 outline-none focus:border-[#3B82F6]/40 transition-all"
                 onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); runAnalysis(); } }}
               />
               <button
                 type="button"
                 onClick={runAnalysis}
                 disabled={analyzing || readyDocs.length === 0}
-                className="inline-flex items-center gap-1.5 h-9 px-4 rounded-2xl text-xs font-semibold text-white bg-gradient-to-r from-[#3B82F6] to-[#1D4ED8] hover:shadow-lg hover:shadow-[#3B82F6]/20 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer shrink-0"
+                className="inline-flex items-center gap-1.5 h-10 md:h-9 px-5 md:px-4 rounded-2xl text-xs font-semibold text-white bg-gradient-to-r from-[#3B82F6] to-[#1D4ED8] hover:shadow-lg hover:shadow-[#3B82F6]/20 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer shrink-0"
               >
                 <Sparkle size={13} weight="bold" />
                 {analyzing ? "Analyzing..." : "Analyze"}
@@ -594,7 +596,7 @@ ${r.limitations ? `<h2>Limitations</h2><p>${r.limitations}</p>` : ""}
                     <div className="flex-1 min-w-0">
                       <h3 className="text-sm font-semibold text-red-200">Could not analyze</h3>
                       <p className="text-xs text-red-200/70 mt-1">{error}</p>
-                      <button type="button" onClick={runAnalysis} className="inline-flex items-center gap-1.5 mt-3 h-7 px-2.5 rounded-md text-[11px] text-red-200 hover:text-white bg-red-500/10 hover:bg-red-500/20 transition-colors cursor-pointer">
+                        <button type="button" onClick={runAnalysis} className="inline-flex items-center gap-1.5 mt-3 min-h-[44px] h-auto py-2.5 px-3 md:h-7 md:px-2.5 md:py-0 rounded-md text-[11px] text-red-200 hover:text-white bg-red-500/10 hover:bg-red-500/20 transition-colors cursor-pointer">
                         <ArrowsClockwise size={11} weight="bold" /> Retry
                       </button>
                     </div>
@@ -800,13 +802,13 @@ ${r.limitations ? `<h2>Limitations</h2><p>${r.limitations}</p>` : ""}
                         onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleChatSubmit(); } }}
                         placeholder="Ask a follow-up..."
                         disabled={chatLoading}
-                        className="flex-1 h-8 px-3 rounded-2xl bg-white/[0.03] border border-white/[0.08] text-xs text-white placeholder:text-white/30 outline-none focus:border-[#3B82F6]/40 disabled:opacity-40 transition-all"
+                        className="flex-1 h-10 md:h-8 px-3 rounded-2xl bg-white/[0.03] border border-white/[0.08] text-xs text-white placeholder:text-white/30 outline-none focus:border-[#3B82F6]/40 disabled:opacity-40 transition-all"
                       />
                       <button
                         type="button"
                         onClick={() => handleChatSubmit()}
                         disabled={!chatQuery.trim() || chatLoading}
-                        className="w-8 h-8 rounded-xl bg-[#3B82F6] text-white flex items-center justify-center disabled:opacity-40 hover:bg-[#3B82F6]/80 transition-all cursor-pointer"
+                        className="w-10 h-10 md:w-8 md:h-8 rounded-xl bg-[#3B82F6] text-white flex items-center justify-center disabled:opacity-40 hover:bg-[#3B82F6]/80 transition-all cursor-pointer"
                       >
                         <PaperPlaneRight size={12} weight="bold" />
                       </button>
@@ -861,7 +863,7 @@ ${r.limitations ? `<h2>Limitations</h2><p>${r.limitations}</p>` : ""}
               type="button"
               disabled={!result || fullAnalysisLoading}
               onClick={handleFullAnalysis}
-              className="w-full mt-4 inline-flex items-center justify-center gap-2 h-9 rounded-xl text-xs font-semibold text-white bg-gradient-to-r from-purple-600 to-[#1D4ED8] hover:shadow-lg hover:shadow-purple-500/20 disabled:opacity-40 transition-all cursor-pointer"
+              className="w-full mt-4 inline-flex items-center justify-center gap-2 h-10 md:h-9 rounded-xl text-xs font-semibold text-white bg-gradient-to-r from-purple-600 to-[#1D4ED8] hover:shadow-lg hover:shadow-purple-500/20 disabled:opacity-40 transition-all cursor-pointer"
             >
               {fullAnalysisLoading ? (
                 <><Spinner size={12} className="animate-spin" /> Generating...</>
@@ -880,7 +882,7 @@ ${r.limitations ? `<h2>Limitations</h2><p>${r.limitations}</p>` : ""}
                 type="button"
                 disabled={!result || chatLoading}
                 onClick={() => { handleChatSubmit("Generate concise key takeaways from this analysis"); }}
-                className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-2xl hover:bg-white/[0.04] hover:ring-1 hover:ring-white/[0.06] transition-all text-left cursor-pointer disabled:opacity-40"
+                className="w-full flex items-center gap-2.5 px-2.5 min-h-[44px] py-2.5 md:py-2 rounded-2xl hover:bg-white/[0.04] hover:ring-1 hover:ring-white/[0.06] transition-all text-left cursor-pointer disabled:opacity-40"
               >
                 <div className="w-7 h-7 rounded-2xl bg-[#3B82F6]/10 flex items-center justify-center shrink-0">
                   <Lightbulb size={13} className="text-amber-300" />
@@ -896,7 +898,7 @@ ${r.limitations ? `<h2>Limitations</h2><p>${r.limitations}</p>` : ""}
                   type="button"
                   disabled={!result}
                   onClick={() => setExportOpen((o) => !o)}
-                  className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-2xl hover:bg-white/[0.04] hover:ring-1 hover:ring-white/[0.06] transition-all text-left cursor-pointer disabled:opacity-40"
+              className="w-full flex items-center gap-2.5 px-2.5 min-h-[44px] py-2.5 md:py-2 rounded-2xl hover:bg-white/[0.04] hover:ring-1 hover:ring-white/[0.06] transition-all text-left cursor-pointer disabled:opacity-40"
                 >
                   <div className="w-7 h-7 rounded-2xl bg-[#3B82F6]/10 flex items-center justify-center shrink-0">
                     <Download size={13} className="text-[#60A5FA]" />
@@ -916,10 +918,10 @@ ${r.limitations ? `<h2>Limitations</h2><p>${r.limitations}</p>` : ""}
                       transition={{ duration: 0.12 }}
                       className="absolute bottom-full left-0 mb-1 w-full bg-[#0d0d10] border border-white/10 rounded-xl shadow-2xl shadow-black/60 overflow-hidden z-30 origin-bottom-left"
                     >
-                      <button onClick={() => { exportAsPdf(); setExportOpen(false); }} className="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-white/[0.05] transition-colors text-xs text-white/80 text-left">
+                      <button onClick={() => { exportAsPdf(); setExportOpen(false); }} className="w-full flex items-center gap-2.5 px-4 py-3 md:px-3 md:py-2.5 hover:bg-white/[0.05] transition-colors text-xs text-white/80 text-left">
                         <Download size={12} /> Export as PDF
                       </button>
-                      <button onClick={() => { exportAsMd(); setExportOpen(false); }} className="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-white/[0.05] transition-colors text-xs text-white/80 text-left">
+                      <button onClick={() => { exportAsMd(); setExportOpen(false); }} className="w-full flex items-center gap-2.5 px-4 py-3 md:px-3 md:py-2.5 hover:bg-white/[0.05] transition-colors text-xs text-white/80 text-left">
                         <FileText size={12} /> Export as Markdown
                       </button>
                     </motion.div>

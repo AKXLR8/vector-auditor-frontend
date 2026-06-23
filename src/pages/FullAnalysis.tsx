@@ -100,7 +100,7 @@ export default function FullAnalysis() {
           if (id === "chats" || id === "documents") navigate("/chat");
           if (id === "analytics") navigate("/analysis");
         }}
-        onAddCollection={() => {}}
+        onHome={() => navigate("/")}
         username={accountName}
       />
 

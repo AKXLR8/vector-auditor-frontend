@@ -50,7 +50,7 @@ import {
   ThumbsUp, ThumbsDown, User, SignOut,
   Spinner, Robot, WarningCircle,
   Folder, Check, XCircle,
-  Sparkle, List,
+  Sparkle, List, ChatCircle, ChartBar,
 } from "@phosphor-icons/react";
 
 const GROUPS_KEY_PREFIX = "vector_doc_groups_";
@@ -1440,20 +1440,22 @@ export default function Dashboard() {
 
   return (
     <div className="h-screen flex overflow-hidden bg-[#090909] text-[#F2F2F2]">
-      {/* Left Nav Rail */}
-      <LeftNavRail
-        activeNav={activeNav}
-        onNavChange={(id) => {
-          setActiveNav(id);
-          if (id === "documents") {
-            setActivePdf(null);
-          } else if (id === "analytics") {
-            navigate("/analysis");
-          }
-        }}
-        onAddCollection={() => setActiveNav("documents")}
+      {/* Left Nav Rail — hidden on mobile (bottom nav replaces it) */}
+      <div className="hidden md:block">
+        <LeftNavRail
+          activeNav={activeNav}
+          onNavChange={(id) => {
+            setActiveNav(id);
+            if (id === "documents") {
+              setActivePdf(null);
+            } else if (id === "analytics") {
+              navigate("/analysis");
+            }
+          }}
+        onHome={() => navigate("/")}
         username={accountName}
-      />
+        />
+      </div>
 
       {/* Mobile overlay */}
       <AnimatePresence>
@@ -1472,7 +1474,7 @@ export default function Dashboard() {
 
       {activeNav === "documents" ? (
         /* ── Immersive Document Library View ── */
-        <div className="flex-1 flex min-w-0 relative bg-[#090909]">
+        <div className="flex-1 flex min-w-0 relative bg-[#090909] max-md:pb-[60px]">
           <div className="flex-1 flex overflow-hidden">
             <DocumentsPanel
               docs={dedupedDocs}
@@ -1587,7 +1589,7 @@ export default function Dashboard() {
                 {hasRealMessages ? (
                   /* ── Chat messages view ── */
                   <>
-                    <div ref={chatContainerRef} className="flex-1 min-h-0 overflow-y-auto px-2 md:px-4 py-2 md:py-6 relative will-change-[scroll-position] [overscroll-behavior:contain]">
+                    <div ref={chatContainerRef} className="flex-1 min-h-0 overflow-y-auto px-2 md:px-4 py-2 md:py-6 max-md:pb-[60px] relative will-change-[scroll-position] [overscroll-behavior:contain]">
                       <div className="max-w-3xl mx-auto flex flex-col gap-2.5 md:gap-4">
                         <AnimatePresence initial={false}>
                           {messages.map((msg, idx) => (
@@ -1888,7 +1890,7 @@ export default function Dashboard() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: 0.1 }}
                   onSubmit={handlePaperPlaneRight}
-                  className="shrink-0 relative z-10 px-2 md:px-4 max-md:pb-4 md:pb-4 pt-1.5 md:pt-3 safe-area-bottom"
+                  className="shrink-0 relative z-10 px-2 md:px-4 max-md:pb-[60px] md:pb-4 pt-1.5 md:pt-3 safe-area-bottom"
                 >
                   <div className="max-w-3xl mx-auto">
                     <AutoGrowTextarea
@@ -1975,7 +1977,7 @@ export default function Dashboard() {
           </div>
         </FileDropZone>
         </div>
-        {!activePdf && <RightInfoPanel
+        {!activePdf && <div className="hidden md:block"><RightInfoPanel
           documents={dedupedDocs}
           selectedDocs={selectedDocs}
           onToggleDoc={toggleDoc}
@@ -1992,10 +1994,35 @@ export default function Dashboard() {
             const citCount = messages.reduce((sum, m) => sum + (m.citations?.length || 0), 0);
             toast.success(`Exported ${citCount} citations`, { icon: "📋" });
           }}
-        />
-        }
+        /></div>}
       </main>
       </>)}
+
+      {/* Mobile bottom nav — replaces LeftNavRail on small screens */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 h-14 bg-[#090909]/95 backdrop-blur-lg border-t border-white/[0.06] flex items-center justify-around px-2 safe-area-bottom">
+        <button
+          onClick={() => { setActiveNav("documents"); setActivePdf(null); }}
+          className={`flex flex-col items-center justify-center gap-0.5 w-16 h-10 rounded-xl transition-colors ${activeNav === "documents" ? "text-[#3B82F6]" : "text-white/40"}`}
+        >
+          <FileText size={20} weight={activeNav === "documents" ? "fill" : "regular"} />
+          <span className="text-[9px] font-medium leading-none">Docs</span>
+        </button>
+        <button
+          onClick={() => setActiveNav("chats")}
+          className={`flex flex-col items-center justify-center gap-0.5 w-16 h-10 rounded-xl transition-colors ${activeNav === "chats" ? "text-[#3B82F6]" : "text-white/40"}`}
+        >
+          <ChatCircle size={20} weight={activeNav === "chats" ? "fill" : "regular"} />
+          <span className="text-[9px] font-medium leading-none">Chats</span>
+        </button>
+        <button
+          onClick={() => navigate("/analysis")}
+          className="flex flex-col items-center justify-center gap-0.5 w-16 h-10 rounded-xl transition-colors text-white/40"
+        >
+          <ChartBar size={20} />
+          <span className="text-[9px] font-medium leading-none">Analyze</span>
+        </button>
+      </nav>
+
       <CommandPalette
         open={paletteOpen}
         onClose={() => setPaletteOpen(false)}
