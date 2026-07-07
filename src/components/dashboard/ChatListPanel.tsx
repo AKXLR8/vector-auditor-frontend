@@ -1,5 +1,5 @@
 import { type ReactNode } from "react";
-import { MagnifyingGlass, Plus, DotsThreeVertical } from "@phosphor-icons/react";
+import { MagnifyingGlass, Plus, DotsThreeVertical, X } from "@phosphor-icons/react";
 import { OnboardingEmpty } from "../OnboardingEmpty";
 import type { LocalSession } from "../../types";
 
@@ -12,6 +12,7 @@ interface Props {
   chatSearch: string;
   onChatSearch: (v: string) => void;
   onNewChat: () => void;
+  onClose?: () => void;
   renderSessionRow: (session: LocalSession) => ReactNode;
 }
 
@@ -39,14 +40,25 @@ export default function ChatListPanel({
   chatSearch,
   onChatSearch,
   onNewChat,
+  onClose,
   renderSessionRow,
 }: Props) {
   return (
-    <aside className="w-full md:w-[340px] flex flex-col bg-[#090909] border-r border-[rgba(255,255,255,0.06)] shrink-0">
+    <aside className="w-full md:w-[340px] h-full flex flex-col bg-[#090909] border-r border-[rgba(255,255,255,0.06)] shrink-0">
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-4 shrink-0">
         <h1 className="text-base font-semibold text-white">Chats</h1>
         <div className="flex items-center gap-1">
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="md:hidden w-8 h-8 rounded-xl bg-[#151515] border border-[rgba(255,255,255,0.06)] flex items-center justify-center text-[#9CA3AF] hover:text-white hover:border-white/20 transition-all"
+              aria-label="Close menu"
+            >
+              <X size={16} weight="bold" />
+            </button>
+          )}
           <button
             type="button"
             onClick={onNewChat}

@@ -1466,7 +1466,7 @@ export default function Dashboard() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 bg-black/70 z-30 md:hidden"
+            className="fixed inset-0 bg-black/70 z-[60] md:hidden"
             onClick={() => setSidebarOpen(false)}
           />
         )}
@@ -1510,7 +1510,7 @@ export default function Dashboard() {
         <>
           {/* Chat List Panel — desktop always visible, mobile slide-over */}
           <div
-            className={`fixed md:relative top-0 left-0 bottom-0 z-30 w-screen md:w-[340px] overflow-y-auto transition-transform duration-200 ease-out md:translate-x-0 ${
+            className={`fixed md:relative top-0 left-0 right-0 bottom-0 z-[60] w-screen h-dvh md:w-[340px] md:h-auto overflow-y-auto transition-transform duration-200 ease-out md:translate-x-0 ${
               sidebarOpen ? "translate-x-0" : "-translate-x-full"
             }`}
           >
@@ -1523,12 +1523,13 @@ export default function Dashboard() {
               chatSearch={chatSearch}
               onChatSearch={setChatSearch}
               onNewChat={() => { newChat(); if (isMobile) setSidebarOpen(false); }}
+              onClose={() => setSidebarOpen(false)}
               renderSessionRow={renderSessionRow}
             />
           </div>
 
       {/* ── Main Chat Area ── */}
-      <main className="flex-1 flex min-w-0 relative">
+      <main className={`flex-1 flex min-w-0 relative ${sidebarOpen ? "pointer-events-none" : ""}`}>
         <div className="flex-1 flex flex-col min-w-0 relative">
         {/* Static background gradient */}
         <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
@@ -1999,7 +2000,7 @@ export default function Dashboard() {
       </>)}
 
       {/* Mobile bottom nav — replaces LeftNavRail on small screens */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 h-16 bg-[#090909] border-t border-white/[0.06] flex items-center justify-around px-1 safe-area-bottom shadow-[0_-4px_20px_rgba(0,0,0,0.3)]">
+      <nav className={`md:hidden fixed bottom-0 left-0 right-0 z-50 h-16 bg-[#090909] border-t border-white/[0.06] flex items-center justify-around px-1 safe-area-bottom shadow-[0_-4px_20px_rgba(0,0,0,0.3)] transition-transform duration-200 ${sidebarOpen ? "translate-y-full" : "translate-y-0"}`}>
         <button
           onClick={() => { setActiveNav("documents"); setActivePdf(null); }}
           type="button"
