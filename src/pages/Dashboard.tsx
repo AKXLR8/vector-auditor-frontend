@@ -1439,7 +1439,7 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="h-screen flex overflow-hidden bg-[#090909] text-[#F2F2F2]">
+    <div className="h-[100dvh] h-screen flex overflow-hidden bg-[#090909] text-[#F2F2F2]">
       {/* Left Nav Rail — hidden on mobile (bottom nav replaces it) */}
       <div className="hidden md:block">
         <LeftNavRail
@@ -1474,7 +1474,7 @@ export default function Dashboard() {
 
       {activeNav === "documents" ? (
         /* ── Immersive Document Library View ── */
-        <div className="flex-1 flex min-w-0 relative bg-[#090909] max-md:pb-[60px]">
+        <div className="flex-1 flex min-w-0 relative bg-[#090909] max-md:pb-[calc(4rem+env(safe-area-inset-bottom,0px))]">
           <div className="flex-1 flex overflow-hidden">
             <DocumentsPanel
               docs={dedupedDocs}
@@ -1529,7 +1529,7 @@ export default function Dashboard() {
           </div>
 
       {/* ── Main Chat Area ── */}
-      <main className={`flex-1 flex min-w-0 relative ${sidebarOpen ? "pointer-events-none" : ""}`}>
+      <main className={`flex-1 flex min-w-0 relative ${sidebarOpen ? "max-md:pointer-events-none" : ""}`}>
         <div className="flex-1 flex flex-col min-w-0 relative">
         {/* Static background gradient */}
         <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
@@ -1891,7 +1891,7 @@ export default function Dashboard() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: 0.1 }}
                   onSubmit={handlePaperPlaneRight}
-                  className="shrink-0 relative z-10 px-2 md:px-4 max-md:pb-[60px] md:pb-4 pt-1.5 md:pt-3 safe-area-bottom"
+                  className="shrink-0 relative z-10 px-2 md:px-4 max-md:pb-[calc(4rem+env(safe-area-inset-bottom,0px))] md:pb-4 pt-1.5 md:pt-3"
                 >
                   <div className="max-w-3xl mx-auto">
                     <AutoGrowTextarea
@@ -2000,7 +2000,7 @@ export default function Dashboard() {
       </>)}
 
       {/* Mobile bottom nav — replaces LeftNavRail on small screens */}
-      <nav className={`md:hidden fixed bottom-0 left-0 right-0 z-50 h-16 bg-[#090909] border-t border-white/[0.06] flex items-center justify-around px-1 safe-area-bottom shadow-[0_-4px_20px_rgba(0,0,0,0.3)] transition-transform duration-200 ${sidebarOpen ? "translate-y-full" : "translate-y-0"}`}>
+      <nav className={`md:hidden fixed bottom-0 left-0 right-0 z-50 h-16 bg-[#090909] border-t border-white/[0.06] flex items-center justify-around px-1 pb-[env(safe-area-inset-bottom,0px)] shadow-[0_-4px_20px_rgba(0,0,0,0.3)] transition-transform duration-200 ${sidebarOpen ? "translate-y-full" : "translate-y-0"}`}>
         <button
           onClick={() => { setActiveNav("documents"); setActivePdf(null); }}
           type="button"
